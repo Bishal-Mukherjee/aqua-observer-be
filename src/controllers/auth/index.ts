@@ -218,8 +218,6 @@ export const logout = async (
       compareSync(refreshToken, row.token_hash),
     );
 
-    console.log("validToken.id", validToken);
-
     await pool.query("DELETE FROM refresh_tokens WHERE user_id = $1", [
       validToken.user_id,
     ]);
