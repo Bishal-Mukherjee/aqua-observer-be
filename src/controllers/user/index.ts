@@ -4,7 +4,6 @@ import { pool } from "@/config/db";
 export const getUserDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
-
     const query = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
 
     if (query.rows.length === 0) {
@@ -16,6 +15,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
     res.status(200).json(user);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
