@@ -1,5 +1,4 @@
 import express from "express";
-import { authenticate } from "@/middlewares/authenticate";
 import {
   getSighting,
   getAllSightings,
@@ -8,8 +7,8 @@ import {
 
 const router = express.Router();
 
-router.get("/", authenticate, getAllSightings);
-router.get("/:id", authenticate, getSighting);
-router.post("/", authenticate, postSighting);
+router.get("/", getAllSightings);
+router.get("/:id", getSighting);
+router.post("/", postSighting);
 
 export default router;

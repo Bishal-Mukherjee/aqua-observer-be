@@ -43,7 +43,7 @@ export const getSighting = async (req: Request, res: Response) => {
      ),
      'notes', s.notes,
      'imageUrls', s.image_urls
-     ) AS sighting
+     ) AS result
      FROM sightings s
      WHERE s.id = $1 AND s.sighter_id = $2`,
       [sightingId, id],
@@ -61,7 +61,7 @@ export const getAllSightings = async (req: Request, res: Response) => {
     const { id } = req.user;
 
     const query = await pool.query(
-      `SELECT json_agg(sighting_row) AS sightings
+      `SELECT json_agg(sighting_row) AS result
 		FROM (
   			SELECT 
     		s.id,

@@ -41,31 +41,13 @@ pool.connect((err) => {
     console.error("Error connecting to Database", err.message);
     process.exit(1);
   } else {
-    console.info("✅ Connected to Database");
+    console.info("✅ Connected to database");
   }
 });
 
 // Routes
 app.get("/", (req, res) => {
   res.send(" 🚀 SERVER WORKING ");
-});
-
-app.get("/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.status(200).json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: "connected",
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: "unhealthy",
-      timestamp: new Date().toISOString(),
-      database: "disconnected",
-    });
-  }
 });
 
 app.use("/api/v1", apiRoutes);
