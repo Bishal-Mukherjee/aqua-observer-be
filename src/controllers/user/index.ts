@@ -12,7 +12,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
     }
 
     const { password, ...user } = query.rows[0];
-    res.status(200).json(user);
+    res.status(200).json({ message: "User details fetched successfully", result: user });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -55,10 +55,10 @@ export const updateUserDetails = async (req: Request, res: Response) => {
 
     values.push(id);
 
-    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = $${index}`;
-    await pool.query(query, values);
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = $${index} RETURNING *`;
+    const result = await pool.query(query, values);
 
-    res.status(200).json({ message: "User details updated successfully" });
+    res.status(200).json({ message: "User details updated successfully", result: result.rows[0] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });

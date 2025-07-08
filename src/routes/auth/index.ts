@@ -1,5 +1,4 @@
 import express from "express";
-// import { authenticate } from "@/middlewares/authenticate";
 import { signin, signup, refreshToken, logout } from "@/controllers/auth";
 
 const router = express.Router();

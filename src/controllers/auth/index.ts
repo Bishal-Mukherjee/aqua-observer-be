@@ -13,7 +13,11 @@ import {
 
 export const signup = async (
   req: Request<{}, {}, { name: string; phoneNumber: string; password: string }>,
-  res: Response<{ error?: string; message: string }>,
+  res: Response<{
+    error?: string;
+    message: string;
+    result?: { accessToken: string; refreshToken: string };
+  }>,
 ): Promise<void> => {
   try {
     const { name, phoneNumber, password } = req.body;
@@ -40,12 +44,40 @@ export const signup = async (
     const salt = await genSalt(10);
     const hashedPassword = await hash(password, salt);
 
-    await pool.query(
-      "INSERT INTO users (name, phone_number, password) VALUES ($1, $2, $3)",
+    const userQuery = await pool.query(
+      "INSERT INTO users (name, phone_number, password) VALUES ($1, $2, $3) RETURNING id",
       [name, phoneNumber, hashedPassword],
     );
 
-    res.status(201).json({ message: "User created successfully" });
+    const accessToken = jwt.sign(
+      {
+        id: userQuery.rows[0].id,
+      },
+      config.jwtSecret,
+      {
+        expiresIn: "1d",
+      },
+    );
+
+    const refreshToken = crypto.randomBytes(32).toString("hex");
+    const refreshTokenHash = await hash(refreshToken, 10);
+
+    await pool.query(
+      "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, NOW())",
+      [
+        userQuery.rows[0].id,
+        refreshTokenHash,
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      ],
+    );
+
+    res.status(201).json({
+      message: "User signed up successfully",
+      result: {
+        accessToken,
+        refreshToken,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to signup user" });
@@ -57,8 +89,10 @@ export const signin = async (
   res: Response<{
     error?: string;
     message: string;
-    accessToken?: string;
-    refreshToken?: string;
+    result?: {
+      accessToken: string;
+      refreshToken: string;
+    };
   }>,
 ) => {
   try {
@@ -123,9 +157,11 @@ export const signin = async (
     );
 
     res.status(200).json({
-      message: "success",
-      accessToken,
-      refreshToken,
+      message: "User signed in successfully",
+      result: {
+        accessToken,
+        refreshToken,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -138,7 +174,7 @@ export const refreshToken = async (
   res: Response<{
     message: string;
     error?: string;
-    accessToken?: string;
+    result?: string;
   }>,
 ) => {
   try {
@@ -182,7 +218,9 @@ export const refreshToken = async (
     );
 
     // Rotate refresh token for better security
-    res.status(200).json({ message: "success", accessToken });
+    res
+      .status(200)
+      .json({ message: "Token refreshed successfully", result: accessToken });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to refresh token" });
@@ -225,8 +263,6 @@ export const logout = async (
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: "Failed to logout user",
-    });
+    res.status(500).json({ message: "Failed to logout user" });
   }
 };
