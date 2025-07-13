@@ -19,6 +19,7 @@ export const signinSchema = Joi.object({
   password: Joi.string().required().messages({
     "any.required": "Password is required",
   }),
+  expiresIn: Joi.string().optional(),
 });
 
 export const refreshTokenSchema = Joi.object({

@@ -20,8 +20,6 @@ export const signup = async (
   }>,
 ): Promise<void> => {
   try {
-    const { name, phoneNumber, password } = req.body;
-
     const { error } = signupSchema.validate(req.body);
     if (error) {
       res.status(400).json({
@@ -30,6 +28,8 @@ export const signup = async (
       });
       return;
     }
+
+    const { name, phoneNumber, password } = req.body;
 
     const query = await pool.query(
       "SELECT * FROM users WHERE phone_number = $1",
@@ -85,7 +85,11 @@ export const signup = async (
 };
 
 export const signin = async (
-  req: Request<{}, {}, { phoneNumber: string; password: string }>,
+  req: Request<
+    {},
+    {},
+    { phoneNumber: string; password: string; expiresIn?: string }
+  >,
   res: Response<{
     error?: string;
     message: string;
@@ -96,8 +100,6 @@ export const signin = async (
   }>,
 ) => {
   try {
-    const { phoneNumber, password } = req.body;
-
     const { error } = signinSchema.validate(req.body);
     if (error) {
       res.status(400).json({
@@ -106,6 +108,12 @@ export const signin = async (
       });
       return;
     }
+
+    const {
+      phoneNumber,
+      password,
+      expiresIn = "1d", // TODO: Remove this
+    } = req.body;
 
     const query = await pool.query(
       "SELECT id, password FROM users WHERE phone_number = $1",
@@ -131,7 +139,7 @@ export const signin = async (
       },
       config.jwtSecret,
       {
-        expiresIn: "1d",
+        expiresIn: expiresIn as any, // TODO: Remove this
       },
     );
 
@@ -178,8 +186,6 @@ export const refreshToken = async (
   }>,
 ) => {
   try {
-    const { refreshToken } = req.body;
-
     const { error } = refreshTokenSchema.validate(req.body);
     if (error) {
       res.status(400).json({
@@ -188,6 +194,8 @@ export const refreshToken = async (
       });
       return;
     }
+
+    const { refreshToken } = req.body;
 
     // Find and validate refresh token
     const tokenQuery = await pool.query(
@@ -235,8 +243,6 @@ export const logout = async (
   }>,
 ) => {
   try {
-    const { refreshToken } = req.body;
-
     const { error } = logoutSchema.validate(req.body);
     if (error) {
       res.status(400).json({
@@ -245,6 +251,8 @@ export const logout = async (
       });
       return;
     }
+
+    const { refreshToken } = req.body;
 
     const tokenQuery = await pool.query(
       `SELECT rt.user_id, rt.token_hash, rt.expires_at
