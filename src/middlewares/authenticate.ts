@@ -53,9 +53,7 @@ export const authenticate = async (
     const userStatus = result.rows[0].status;
 
     if (userStatus === "BLOCKED") {
-      res.status(401).json({
-        message: "Unauthorized: User access denied",
-      });
+      res.status(403).json({ message: "Unauthorized: User access denied" });
       return;
     }
 
