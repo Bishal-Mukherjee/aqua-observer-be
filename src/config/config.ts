@@ -11,6 +11,12 @@ interface Config {
     user: string;
     password: string;
   };
+  redis: {
+    username: string;
+    password: string;
+    host: string;
+    port: number;
+  };
   jwtSecret: string;
 }
 
@@ -34,9 +40,28 @@ const dbConfig = () => {
   };
 };
 
+const redisConfig = () => {
+  if (
+    !process.env.REDIS_USERNAME ||
+    !process.env.REDIS_PASSWORD ||
+    !process.env.REDIS_HOST ||
+    !process.env.REDIS_PORT
+  ) {
+    throw new Error("Missing redis configuration");
+  }
+
+  return {
+    username: process.env.REDIS_USERNAME,
+    password: process.env.REDIS_PASSWORD,
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+  };
+};
+
 export const config: Config = {
-  port: Number(process.env.PORT) || 8080,
+  port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
   jwtSecret: process.env.JWT_SECRET || "secret",
   db: dbConfig(),
+  redis: redisConfig(),
 };

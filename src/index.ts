@@ -6,9 +6,10 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { pool } from "@/config/db";
+import { redisClient } from "@/config/redis";
 import { config } from "@/config/config";
 import { rateLimiter } from "@/utils/rate-limit";
-import apiRoutes from "@/routes";
+import { router as apiRoutes } from "@/routes";
 import { errorHandler } from "@/middlewares/errorHandler";
 
 const app = express();
@@ -44,6 +45,15 @@ pool.connect((err) => {
     console.info("✅ Connected to database");
   }
 });
+
+// Redis Connection
+redisClient
+  .connect()
+  .then(() => console.log("✅ Connected to redis"))
+  .catch((err: Error) => {
+    console.log("Error connecting to Redis");
+    console.log(err);
+  });
 
 // Routes
 app.get("/", (req, res) => {
