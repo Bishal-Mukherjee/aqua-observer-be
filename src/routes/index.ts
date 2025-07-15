@@ -12,4 +12,4 @@ router.use("/health", authenticate, healthRoutes);
 router.use("/user", authenticate, userRoutes);
 router.use("/sighting", authenticate, sightingRoutes);
 
-export default router;
+export { router };
