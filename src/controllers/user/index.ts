@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
+import { toCamelCase } from "@/utils/strings";
 
 export const getUserDetails = async (req: Request, res: Response) => {
   try {
@@ -12,7 +13,18 @@ export const getUserDetails = async (req: Request, res: Response) => {
     }
 
     const { password, ...user } = query.rows[0];
-    res.status(200).json({ message: "User details fetched successfully", result: user });
+
+    // Convert snake_case to camelCase
+    const formattedResult = Object.fromEntries(
+      Object.entries(user).map(([key, value]) => {
+        return [toCamelCase(key), value];
+      }),
+    );
+
+    res.status(200).json({
+      message: "User details fetched successfully",
+      result: formattedResult,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -58,7 +70,19 @@ export const updateUserDetails = async (req: Request, res: Response) => {
     const query = `UPDATE users SET ${fields.join(", ")} WHERE id = $${index} RETURNING *`;
     const result = await pool.query(query, values);
 
-    res.status(200).json({ message: "User details updated successfully", result: result.rows[0] });
+    const { password, ...user } = result.rows[0];
+
+    // Convert snake_case to camelCase
+    const formattedResult = Object.fromEntries(
+      Object.entries(user).map(([key, value]) => {
+        return [toCamelCase(key), value];
+      }),
+    );
+
+    res.status(200).json({
+      message: "User details updated successfully",
+      result: formattedResult,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
