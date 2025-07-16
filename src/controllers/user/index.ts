@@ -56,7 +56,7 @@ export const updateUserDetails = async (req: Request, res: Response) => {
     }
 
     if (profilePicUrl) {
-      fields.push(`profle_pic_url = $${index++}`);
+      fields.push(`profile_pic_url = $${index++}`);
       values.push(profilePicUrl);
     }
 
