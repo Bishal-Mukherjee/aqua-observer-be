@@ -34,7 +34,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
 export const updateUserDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
-    const { address, name, gender, proflePicUrl } = req.body;
+    const { address, name, gender, profilePicUrl } = req.body;
 
     const fields: string[] = [];
     const values: string[] = [];
@@ -55,9 +55,9 @@ export const updateUserDetails = async (req: Request, res: Response) => {
       values.push(gender);
     }
 
-    if (proflePicUrl) {
+    if (profilePicUrl) {
       fields.push(`profle_pic_url = $${index++}`);
-      values.push(proflePicUrl);
+      values.push(profilePicUrl);
     }
 
     if (fields.length === 0) {
