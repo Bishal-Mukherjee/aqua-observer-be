@@ -5,6 +5,7 @@ import healthRoutes from "@/routes/health";
 import userRoutes from "@/routes/user";
 import sightingRoutes from "@/routes/sighting";
 import questionRoutes from "@/routes/questions";
+import resourceRoutes from "@/routes/resource";
 
 const router = express.Router();
 
@@ -13,5 +14,6 @@ router.use("/health", authenticate, healthRoutes);
 router.use("/user", authenticate, userRoutes);
 router.use("/sighting", authenticate, sightingRoutes);
 router.use("/question", authenticate, questionRoutes);
+router.use("/resource", resourceRoutes);
 
 export { router };

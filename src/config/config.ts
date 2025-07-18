@@ -18,6 +18,8 @@ interface Config {
     port: number;
   };
   jwtSecret: string;
+  serviceRole: string;
+  storageUrl: string;
 }
 
 const dbConfig = () => {
@@ -64,4 +66,6 @@ export const config: Config = {
   jwtSecret: process.env.JWT_SECRET || "secret",
   db: dbConfig(),
   redis: redisConfig(),
+  storageUrl: process.env.STORAGE_URL || "",
+  serviceRole: process.env.SERVICE_ROLE || "",
 };
