@@ -23,14 +23,16 @@ export const authenticate = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const { accessToken = "" } = req.query;
+
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if ((!authHeader || !authHeader.startsWith("Bearer ")) && !accessToken) {
     res.status(401).json({ message: "Unauthorized: Missing or invalid token" });
     return;
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = (authHeader?.split(" ")[1] || accessToken || "") as string;
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;

@@ -12,6 +12,7 @@ import moduleRoutes from "@/routes/module";
 import reportingRoutes from "@/routes/reporting";
 import submissionRoutes from "@/routes/submission";
 import notificationRoutes from "@/routes/notifications";
+import resourceRoutes from "@/routes/resource";
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use("/question", authenticate, questionRoutes);
 router.use("/tier", authenticate, tierRoutes);
 router.use("/module", authenticate, moduleRoutes);
 router.use("/notifications", authenticate, notificationRoutes);
+router.use("/resource", resourceRoutes);
 
 export { router };
