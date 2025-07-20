@@ -1,13 +1,13 @@
 import express from "express";
 import {
   getSighting,
-  getAllSightings,
+  getSightings,
   postSighting,
 } from "@/controllers/sighting";
 
 const router = express.Router();
 
-router.get("/", getAllSightings);
+router.get("/", getSightings);
 router.get("/:id", getSighting);
 router.post("/", postSighting);
 
