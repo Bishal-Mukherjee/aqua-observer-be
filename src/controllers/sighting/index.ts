@@ -143,18 +143,20 @@ export const getSightings = async (req: Request, res: Response) => {
 export const postSighting = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
-    const { species } = req.body;
+    const { species = [] } = req.body;
 
     const query = await pool.query(
-      `INSERT INTO sightings (observed_at, sighter_id, latitude, longitude, altitude, place, district, block, 
-	  village_or_ghat, water_body, weather_condition, dangers, water_body_condition, fishing_gear, image_urls, notes) 
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+      `INSERT INTO sightings (sighter_id, observed_at, latitude, longitude, altitude, accuracy, provider,  
+	  place, district, block, village_or_ghat, water_body, weather_condition, dangers, water_body_condition,  
+	  fishing_gear, image_urls, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
       [
-        req.body.observedAt,
         id,
+        req.body.observedAt,
         req.body.latitude,
         req.body.longitude,
         req.body.altitude,
+        req.body.accuracy,
+        req.body.provider,
         req.body.place,
         req.body.district,
         req.body.block,
