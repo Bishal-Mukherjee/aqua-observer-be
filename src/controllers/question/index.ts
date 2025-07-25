@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
-import { DistrictBlocks } from "@/controllers/question/types";
+import { DistrictBlocks, Question } from "@/controllers/question/types";
 
 export const getAllQuestions = async (req: Request, res: Response) => {
   try {
@@ -21,9 +21,9 @@ export const getAllQuestions = async (req: Request, res: Response) => {
       `);
 
     if (cachedData) {
-      const cachedQuestions = JSON.parse(cachedData);
+      const cachedQuestions: Question[] = JSON.parse(cachedData);
 
-      const questions = cachedQuestions.map((q: any) => {
+      const questions = cachedQuestions.map((q) => {
         if (q.option_key === "species") {
           return { ...q, options: speciesQuery.rows[0].species };
         }
