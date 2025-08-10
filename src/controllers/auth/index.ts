@@ -12,7 +12,18 @@ import {
 } from "@/controllers/auth/validations";
 
 export const signup = async (
-  req: Request<{}, {}, { name: string; phoneNumber: string; password: string }>,
+  req: Request<
+    {},
+    {},
+    {
+      name: string;
+      phoneNumber: string;
+      password: string;
+      gender: string;
+      dateOfBirth: string;
+      preferredLanguage: string;
+    }
+  >,
   res: Response<{
     error?: string;
     message: string;
@@ -29,7 +40,14 @@ export const signup = async (
       return;
     }
 
-    const { name, phoneNumber, password } = req.body;
+    const {
+      name,
+      phoneNumber,
+      password,
+      gender,
+      dateOfBirth,
+      preferredLanguage,
+    } = req.body;
 
     const query = await pool.query(
       "SELECT * FROM users WHERE phone_number = $1",
@@ -45,8 +63,15 @@ export const signup = async (
     const hashedPassword = await hash(password, salt);
 
     const userQuery = await pool.query(
-      "INSERT INTO users (name, phone_number, password) VALUES ($1, $2, $3) RETURNING id",
-      [name, phoneNumber, hashedPassword],
+      "INSERT INTO users (name, phone_number, password, gender, date_of_birth, preferred_language) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+      [
+        name,
+        phoneNumber,
+        hashedPassword,
+        gender,
+        dateOfBirth,
+        preferredLanguage,
+      ],
     );
 
     const accessToken = jwt.sign(

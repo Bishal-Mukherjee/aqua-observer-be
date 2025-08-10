@@ -10,6 +10,15 @@ export const signupSchema = Joi.object({
   password: Joi.string().required().messages({
     "any.required": "Password is required",
   }),
+  gender: Joi.string().required().messages({
+    "any.required": "Gender is required",
+  }),
+  dateOfBirth: Joi.string().required().messages({
+    "any.required": "Date of birth is required",
+  }),
+  preferredLanguage: Joi.string().required().messages({
+    "any.required": "Preferred language is required",
+  }),
 });
 
 export const signinSchema = Joi.object({

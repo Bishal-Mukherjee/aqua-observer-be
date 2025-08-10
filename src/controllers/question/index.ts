@@ -3,10 +3,37 @@ import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
 import { DistrictBlocks } from "@/controllers/question/types";
 
+const speciesAgeGroups = {
+  duo: [
+    {
+      label: { en: "Adults", bn: "বয়স্ক" },
+      value: "adult",
+    },
+    {
+      label: { en: "Calves", bn: "ক্যালভেস" },
+      value: "calf",
+    },
+  ],
+  trio: [
+    {
+      label: { en: "Adult Male", bn: "বয়স্ক পুরুষ" },
+      value: "adultMale",
+    },
+    {
+      label: { en: "Adult Female", bn: "বয়স্ক মহিলা" },
+      value: "adultFemale",
+    },
+    {
+      label: { en: "Sub-Adults/Juveniles", bn: "অর্ধবয়স্ক/কিশোর" },
+      value: "subAdult",
+    },
+  ],
+};
+
 export const getAllQuestions = async (req: Request, res: Response) => {
   try {
-    const cacheKey = "question_set:v1";
-    const cachedData = await redisClient.get(cacheKey);
+    // const cacheKey = "question_set:v1";
+    // const cachedData = await redisClient.get(cacheKey);
 
     const speciesQuery = await pool.query(`
         SELECT json_agg(
@@ -14,28 +41,29 @@ export const getAllQuestions = async (req: Request, res: Response) => {
             'label', json_build_object('en', label_en, 'bn', label_bn),
             'value', value,
             'adultImg', adult_img,
-            'subAdultImg', sub_adult_img
+			'ageGroup', age_group
           )
         ) AS species
         FROM species
       `);
 
-    if (cachedData) {
-      const cachedQuestions = JSON.parse(cachedData);
+    // 'subAdultImg', sub_adult_img
+    // if (cachedData) {
+    //   const cachedQuestions = JSON.parse(cachedData);
 
-      const questions = cachedQuestions.map((q: any) => {
-        if (q.option_key === "species") {
-          return { ...q, options: speciesQuery.rows[0].species };
-        }
-        return q;
-      });
+    //   const questions = cachedQuestions.map((q: any) => {
+    //     if (q.option_key === "species") {
+    //       return { ...q, options: speciesQuery.rows[0].species };
+    //     }
+    //     return q;
+    //   });
 
-      res.status(200).json({
-        message: "Questions fetched successfully",
-        result: questions,
-      });
-      return;
-    }
+    //   res.status(200).json({
+    //     message: "Questions fetched successfully",
+    //     result: questions,
+    //   });
+    //   return;
+    // }
 
     const [
       districtData,
@@ -69,10 +97,9 @@ export const getAllQuestions = async (req: Request, res: Response) => {
       .sort((a, b) => a.index - b.index)
       .map((question) => {
         const { option_key } = question;
-        const options =
-          option_key && option_key !== "species"
-            ? dataObj[option_key as keyof typeof dataObj]
-            : null;
+        const options = option_key
+          ? dataObj[option_key as keyof typeof dataObj]
+          : null;
 
         return {
           topic: question.topic,
@@ -87,17 +114,20 @@ export const getAllQuestions = async (req: Request, res: Response) => {
         };
       });
 
-    const cacheSafeQuestions = allQuestions.map((q) =>
-      q.option_key === "species" ? { ...q, options: null } : q,
-    );
+    // const cacheSafeQuestions = allQuestions.map((q) =>
+    //   q.option_key === "species" ? { ...q, options: null } : q,
+    // );
 
-    await redisClient.set(cacheKey, JSON.stringify(cacheSafeQuestions), {
-      EX: 604800, // 7 days (60 * 60 * 24 * 7)
-    });
+    // await redisClient.set(cacheKey, JSON.stringify(cacheSafeQuestions), {
+    //   EX: 604800, // 7 days (60 * 60 * 24 * 7)
+    // });
 
     res.status(200).json({
       message: "Questions fetched successfully",
-      result: allQuestions,
+      result: {
+        questions: allQuestions,
+        speciesAgeGroups,
+      },
     });
   } catch (error) {
     console.error(error);
