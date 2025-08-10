@@ -21,6 +21,17 @@ export const signupSchema = Joi.object({
   }),
 });
 
+export const signupCodeSchema = Joi.object({
+  phoneNumber: Joi.string()
+    .pattern(/^\+91[6-9]\d{9}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "Invalid phone number",
+      "string.empty": "Phone number is required",
+      "any.required": "Phone number is required",
+    }),
+});
+
 export const signinSchema = Joi.object({
   phoneNumber: Joi.string().required().messages({
     "any.required": "Phone number is required",

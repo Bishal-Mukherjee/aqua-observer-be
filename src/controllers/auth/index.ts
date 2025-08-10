@@ -4,8 +4,10 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { pool } from "@/config/db";
 import { config } from "@/config/config";
+import { generateOTP } from "@/utils/numbers";
 import {
   signinSchema,
+  signupCodeSchema,
   signupSchema,
   refreshTokenSchema,
   logoutSchema,
@@ -106,6 +108,41 @@ export const signup = async (
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to signup user" });
+  }
+};
+
+export const signupCode = async (
+  req: Request<{}, {}, { phoneNumber: string }>,
+  res: Response<{
+    error?: string;
+    message: string;
+    result?: { otp: string };
+  }>,
+): Promise<void> => {
+  try {
+    const { error } = signupCodeSchema.validate(req.body);
+
+    if (error) {
+      res.status(400).json({
+        error: "Validation error",
+        message: error.details[0].message,
+      });
+      return;
+    }
+
+    const { phoneNumber } = req.body;
+
+    const otp = generateOTP();
+
+    await pool.query(
+      "INSERT INTO one_time_password (code) VALUES ($1) RETURNING *",
+      [otp],
+    );
+
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
