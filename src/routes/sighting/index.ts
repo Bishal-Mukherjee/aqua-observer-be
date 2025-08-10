@@ -1,14 +1,14 @@
 import express from "express";
 import {
-  getSighting,
-  getSightings,
+  getAllSightings,
+  getSightingsByType,
   postSighting,
 } from "@/controllers/sighting";
 
 const router = express.Router();
 
-router.get("/", getSightings);
-router.get("/:id", getSighting);
-router.post("/", postSighting);
+router.get("/", getAllSightings);
+router.get("/:type", getSightingsByType);
+router.post("/:type", postSighting);
 
 export default router;

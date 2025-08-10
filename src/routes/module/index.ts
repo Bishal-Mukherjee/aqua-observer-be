@@ -1,9 +1,10 @@
 import express from "express";
 import { authenticate } from "@/middlewares/authenticate";
-import { getModules } from "@/controllers/module";
+import { getModules, getOnboardingModules } from "@/controllers/module";
 
 const router = express.Router();
 
-router.get("/:tier", authenticate, getModules);
+router.get("/tier/:tier", authenticate, getModules);
+router.get("/onboarding-modules", getOnboardingModules);
 
 export default router;

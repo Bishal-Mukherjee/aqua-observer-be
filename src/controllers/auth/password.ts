@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
-import { genSalt, hash, compare, compareSync } from "bcrypt";
+import { genSalt, hash } from "bcrypt";
 import { pool } from "@/config/db";
-import { config } from "@/config/config";
 import { generateOTP } from "@/utils/numbers";
 import {
   forgotPasswordSchema,

@@ -1,211 +1,172 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 
-export const getSighting = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.user;
-    const { id: sightingId } = req.params;
-
-    const searchQuery = await pool.query(
-      "SELECT * FROM sightings WHERE id = $1 AND sighter_id = $2",
-      [sightingId, id],
-    );
-
-    if (searchQuery.rows.length === 0) {
-      res.status(404).json({ message: "Sighting not found" });
-      return;
-    }
-
-    const query = await pool.query(
-      `SELECT json_build_object(
-  	  'longitude', s.longitude,
-      'latitude', s.latitude,
-      'altitude', s.altitude,
-      'place', s.place,
-      'district', s.district,
-      'block', s.block,
-      'villageOrGhat', s.village_or_ghat,
-	  'waterBody', s.water_body,
-	  'weatherCondition', s.weather_condition,
-	  'dangers', s.dangers,
-	  'waterBodyCondition', s.water_body_condition,
-	  'fishingGear', s.fishing_gear,
-      'species', (
-        SELECT json_agg(
-         json_build_object(
-           'type', sp.species,
-          		'adultMale', json_build_object(
-            	'alive', sp.adult_male_alive,
-            	'stranded', sp.adult_male_stranded,
-            	'injured', sp.adult_male_injured,
-            	'dead', sp.adult_male_dead
-          		),
-          		'adultFemale', json_build_object(
-            	'alive', sp.adult_female_alive,
-            	'stranded', sp.adult_female_stranded,
-            	'injured', sp.adult_female_injured,
-            	'dead', sp.adult_female_dead
-         		),
-          		'subAdult', json_build_object(
-            	'alive', sp.subadult_alive,
-            	'stranded', sp.subadult_stranded,
-            	'injured', sp.subadult_injured,
-            	'dead', sp.subadult_dead
-          	)
-        ))FROM sighting_species sp
-      	WHERE sp.sighting_id = s.id
-     	),
-     	'notes', s.notes,
-     	'imageUrls', s.image_urls
-     	) AS result
-    	FROM sightings s
-     	WHERE s.id = $1 AND s.sighter_id = $2`,
-      [sightingId, id],
-    );
-
-    res.status(200).json({
-      message: "Sighting fetched successfully",
-      result: query.rows[0].result,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getSightings = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.user;
-
-    const query = await pool.query(
-      `SELECT json_agg(sighting_row) AS result
-	   FROM (
-  		SELECT 
-    		s.id,
-    		s.longitude,
-    		s.latitude,
-    		s.altitude,
-    		s.place,
-    		s.district,
-    		s.block,
-    		s.village_or_ghat AS "villageOrGhat",
-    		s.water_body AS "waterBody",
-    		s.weather_condition AS "weatherCondition",
-    		s.water_body_condition AS "waterBodyCondition",
-    		s.dangers,
-    		s.fishing_gear AS "fishingGear",
-    		s.notes,
-    		s.image_urls AS "imageUrls",
-    		s.observed_at,
-			(SELECT json_agg(
-        		json_build_object(
-          		'type', sp.species,
-          			'adultMale', json_build_object(
-            		'alive', sp.adult_male_alive,
-            		'stranded', sp.adult_male_stranded,
-            		'injured', sp.adult_male_injured,
-            		'dead', sp.adult_male_dead
-          		),
-          			'adultFemale', json_build_object(
-            		'alive', sp.adult_female_alive,
-            		'stranded', sp.adult_female_stranded,
-            		'injured', sp.adult_female_injured,
-            		'dead', sp.adult_female_dead
-         		),
-          			'subAdult', json_build_object(
-            		'alive', sp.subadult_alive,
-            		'stranded', sp.subadult_stranded,
-            		'injured', sp.subadult_injured,
-            		'dead', sp.subadult_dead
-          		)
-        	)) FROM sighting_species sp
-      		WHERE sp.sighting_id = s.id
-    		) AS species
-  		FROM sightings s 
-  		WHERE s.sighter_id = $1
-  		ORDER BY s.observed_at DESC
-		) AS sighting_row;`,
-      [id],
-    );
-
-    const sightings = query.rows[0];
-
-    res.status(200).json({
-      message: "Sightings fetched successfully",
-      result: sightings.result || [],
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
 export const postSighting = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
-    const { species = [] } = req.body;
+    const { type } = req.params;
 
     const query = await pool.query(
-      `INSERT INTO sightings (sighter_id, observed_at, latitude, longitude, altitude, accuracy, provider,  
-	  place, district, block, village_or_ghat, water_body, weather_condition, dangers, water_body_condition,  
-	  fishing_gear, image_urls, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+      `INSERT INTO sightings (submitted_by, observed_at, latitude, longitude, altitude, 
+	  provider, village_or_ghat, district, block, water_body_condition, weather_condition,
+	   water_body, threats, fishing_gears, images, notes, submission_context) 
+	   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
       [
         id,
         req.body.observedAt,
         req.body.latitude,
         req.body.longitude,
         req.body.altitude,
-        req.body.accuracy,
         req.body.provider,
-        req.body.place,
+        req.body.villageOrGhat,
         req.body.district,
         req.body.block,
-        req.body.villageOrGhat,
-        req.body.waterBody,
-        req.body.weatherCondition,
-        req.body.dangers,
         req.body.waterBodyCondition,
-        req.body.fishingGear,
-        req.body.imageUrls,
+        req.body.weatherCondition,
+        req.body.waterBody,
+        req.body.threats,
+        req.body.fishingGears,
+        req.body.images,
         req.body.notes,
+        type,
       ],
     );
 
-    if (query.rows[0]?.id) {
-      if (species.length === 0) {
-        res.status(201).json({ message: "Sighting created successfully" });
-        return;
-      }
-
-      for (let i = 0; i < species.length; i++) {
-        await pool.query(
-          `INSERT INTO sighting_species (sighting_id, species, 
-		  adult_male_alive, adult_male_stranded, adult_male_injured, adult_male_dead, 
-		  adult_female_alive, adult_female_stranded, adult_female_injured, adult_female_dead, 
-		  subadult_alive, subadult_stranded, subadult_injured, subadult_dead) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-          [
-            query.rows[0].id,
-            species[i].type,
-            species[i]?.adultMale?.alive || 0,
-            species[i]?.adultMale?.stranded || 0,
-            species[i]?.adultMale?.injured || 0,
-            species[i]?.adultMale?.dead || 0,
-            species[i]?.adultFemale?.alive || 0,
-            species[i]?.adultFemale?.stranded || 0,
-            species[i]?.adultFemale?.injured || 0,
-            species[i]?.adultFemale?.dead || 0,
-            species[i]?.subAdult?.alive || 0,
-            species[i]?.subAdult?.stranded || 0,
-            species[i]?.subAdult?.injured || 0,
-            species[i]?.subAdult?.dead || 0,
-          ],
-        );
-      }
+    const species = req.body.species || [];
+    for (const spec of species) {
+      await pool.query(
+        `INSERT INTO sighting_species (sighting_id, species, adult, subadult, adult_male, adult_female) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          query.rows[0].id,
+          spec.type,
+          spec.adult || 0,
+          spec.subadult || 0,
+          spec.adultMale || 0,
+          spec.adultFemale || 0,
+        ],
+      );
     }
 
-    res.status(201).json({ message: "Sighting created successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(201).json({ message: "Observation created successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create observation" });
+  }
+};
+
+export const getAllSightings = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.user;
+
+    const query = await pool.query(
+      `SELECT json_agg(
+         json_build_object(
+           'id', o.id,
+           'submittedBy', o.submitted_by,
+           'observedAt', o.observed_at,
+           'latitude', o.latitude,
+           'longitude', o.longitude,
+           'altitude', o.altitude,
+           'provider', o.provider,
+           'villageOrGhat', o.village_or_ghat,
+           'district', o.district,
+           'block', o.block,
+           'species', (
+             SELECT json_agg(
+               json_build_object(
+                 'type', os.species,
+                 'adult', os.adult,
+                 'subadult', os.subadult,
+                 'adultMale', os.adult_male,
+                 'adultFemale', os.adult_female
+               )
+             )
+             FROM sighting_species os
+             WHERE os.sighting_id = o.id
+           ),
+		   'waterBodyCondition', o.water_body_condition,
+           'weatherCondition', o.weather_condition,
+           'waterBody', o.water_body,
+           'threats', o.threats,
+           'fishingGears', o.fishing_gears,
+           'images', o.images,
+           'notes', o.notes,
+           'submittedAt', o.submitted_at,
+           'type', o.submission_context
+         )
+       ) AS results
+       FROM sightings o
+       WHERE o.submitted_by = $1`,
+      [id],
+    );
+
+    const sightings = query.rows[0]?.results || [];
+
+    res.status(200).json({
+      message: "Sightings retrieved successfully",
+      results: sightings,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to retrieve sightings" });
+  }
+};
+
+export const getSightingsByType = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.user;
+    const { type } = req.params;
+
+    const query = await pool.query(
+      `SELECT json_agg(
+         json_build_object(
+           'id', o.id,
+           'submittedBy', o.submitted_by,
+           'observedAt', o.observed_at,
+           'latitude', o.latitude,
+           'longitude', o.longitude,
+           'altitude', o.altitude,
+           'provider', o.provider,
+           'villageOrGhat', o.village_or_ghat,
+           'district', o.district,
+           'block', o.block,
+           'species', (
+             SELECT json_agg(
+               json_build_object(
+                 'type', os.species,
+                 'adult', os.adult,
+                 'subadult', os.subadult,
+                 'adultMale', os.adult_male,
+                 'adultFemale', os.adult_female
+               )
+             )
+             FROM sighting_species os
+             WHERE os.sighting_id = o.id
+           ),
+		   'waterBodyCondition', o.water_body_condition,
+           'weatherCondition', o.weather_condition,
+           'waterBody', o.water_body,
+           'threats', o.threats,
+           'fishingGears', o.fishing_gears,
+           'images', o.images,
+           'notes', o.notes,
+           'submittedAt', o.submitted_at,
+           'type', o.submission_context
+         )
+       ) AS results
+       FROM sightings o
+       WHERE o.submitted_by = $1 AND o.submission_context = $2`,
+      [id, type],
+    );
+
+    const sightings = query.rows[0]?.results || [];
+
+    res.status(200).json({
+      message: "Sightings retrieved successfully",
+      results: sightings,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to retrieve sightings" });
   }
 };
