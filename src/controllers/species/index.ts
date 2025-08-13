@@ -31,7 +31,7 @@ export const getSpecies = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Species retrieved successfully",
-      results: mergedData || [],
+      result: mergedData || [],
     });
   } catch (err) {
     console.error(err);
