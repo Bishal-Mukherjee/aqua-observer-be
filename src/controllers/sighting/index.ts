@@ -104,7 +104,7 @@ export const getAllSightings = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Sightings retrieved successfully",
-      results: sightings,
+      result: sightings,
     });
   } catch (err) {
     console.error(err);
@@ -163,7 +163,7 @@ export const getSightingsByType = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Sightings retrieved successfully",
-      results: sightings,
+      result: sightings,
     });
   } catch (err) {
     console.error(err);
