@@ -3,7 +3,7 @@ import { getAllQuestions, getBlocks } from "@/controllers/question";
 
 const router = express.Router();
 
-router.get("/", getAllQuestions);
+router.get("/:type", getAllQuestions);
 router.get("/blocks/:district", getBlocks);
 
 export default router;

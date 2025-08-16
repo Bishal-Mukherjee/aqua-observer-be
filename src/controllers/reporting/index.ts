@@ -1,51 +1,56 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 
-export const getReportings = async (req: Request, res: Response) => {
+export const getAllReportings = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
 
     const query = await pool.query(
       `SELECT json_agg(sighting_row) AS result
-	   FROM (
-  		SELECT 
-    		s.id,
-    		s.longitude,
-    		s.latitude,
-    		s.altitude,
-			s.provider,
-    		s.district,
-    		s.block,
-    		s.village_or_ghat AS "villageOrGhat",
-			(SELECT json_agg(
-        		json_build_object(
-          		'type', sp.species,
-          			'adultMale', json_build_object(
-            		'stranded', sp.adult_male_stranded,
-            		'injured', sp.adult_male_injured,
-            		'dead', sp.adult_male_dead
-          		),
-          			'adultFemale', json_build_object(
-            		'stranded', sp.adult_female_stranded,
-            		'injured', sp.adult_female_injured,
-            		'dead', sp.adult_female_dead
-         		),
-          			'subAdult', json_build_object(
-            		'stranded', sp.subadult_stranded,
-            		'injured', sp.subadult_injured,
-            		'dead', sp.subadult_dead
-          		),
-				s.submission_context AS "type"
-        	)) FROM reporting_species sp
-      		WHERE sp.reporting_id = s.id
-    		) AS species,
-		    s.images,
-    		s.observed_at,
-			s.submission_context AS "type"
-  		FROM reportings s 
-  		WHERE s.submitted_by = $1
-  		ORDER BY s.observed_at DESC
-		) AS sighting_row;`,
+       FROM (
+          SELECT 
+            s.id,
+            s.observed_at AS "observedAt",
+            s.latitude,
+            s.longitude,
+            s.altitude,
+            s.provider,
+            s.district,
+            s.block,
+            s.village_or_ghat AS "villageOrGhat",
+            (SELECT json_agg(
+                json_build_object(
+                  'type', sp.species,
+                      'adultMale', json_build_object(
+                    'stranded', sp.adult_male_stranded,
+                    'injured', sp.adult_male_injured,
+                    'dead', sp.adult_male_dead
+                  ),
+                      'adultFemale', json_build_object(
+                    'stranded', sp.adult_female_stranded,
+                    'injured', sp.adult_female_injured,
+                    'dead', sp.adult_female_dead
+                 ),
+                      'subAdult', json_build_object(
+                    'stranded', sp.subadult_stranded,
+                    'injured', sp.subadult_injured,
+                    'dead', sp.subadult_dead
+                  )
+            )) FROM reporting_species sp
+              WHERE sp.reporting_id = s.id
+            ) AS species,
+            s.images,
+			s.submission_context AS "type",
+			s.submitted_at AS "submittedAt",
+            json_build_object(
+              'name', u.name,
+              'phoneNumber', u.phone_number
+            ) AS "submittedBy"
+          FROM reportings s 
+          JOIN users u ON s.submitted_by = u.id
+          WHERE s.submitted_by = $1
+          ORDER BY s.observed_at DESC
+        ) AS sighting_row;`,
       [id],
     );
 
@@ -68,44 +73,49 @@ export const getReportingsByType = async (req: Request, res: Response) => {
 
     const query = await pool.query(
       `SELECT json_agg(sighting_row) AS result
-	   FROM (
-  		SELECT 
-    		s.id,
-    		s.longitude,
-    		s.latitude,
-    		s.altitude,
-			s.provider,
-    		s.district,
-    		s.block,
-    		s.village_or_ghat AS "villageOrGhat",
-			(SELECT json_agg(
-        		json_build_object(
-          		'type', sp.species,
-          			'adultMale', json_build_object(
-            		'stranded', sp.adult_male_stranded,
-            		'injured', sp.adult_male_injured,
-            		'dead', sp.adult_male_dead
-          		),
-          			'adultFemale', json_build_object(
-            		'stranded', sp.adult_female_stranded,
-            		'injured', sp.adult_female_injured,
-            		'dead', sp.adult_female_dead
-         		),
-          			'subAdult', json_build_object(
-            		'stranded', sp.subadult_stranded,
-            		'injured', sp.subadult_injured,
-            		'dead', sp.subadult_dead
-          		)
-        	)) FROM reporting_species sp
-      		WHERE sp.reporting_id = s.id
-    		) AS species,
-		    s.images,
-    		s.observed_at,
-			s.submission_context AS "type"
-  		FROM reportings s 
-  		WHERE s.submitted_by = $1 AND s.submission_context = $2
-  		ORDER BY s.observed_at DESC
-		) AS sighting_row;`,
+       FROM (
+          SELECT 
+            s.id,
+            s.observed_at AS "observedAt",
+            s.latitude,
+            s.longitude,
+            s.altitude,
+            s.provider,
+            s.district,
+            s.block,
+            s.village_or_ghat AS "villageOrGhat",
+            (SELECT json_agg(
+                json_build_object(
+                  'type', sp.species,
+                      'adultMale', json_build_object(
+                    'stranded', sp.adult_male_stranded,
+                    'injured', sp.adult_male_injured,
+                    'dead', sp.adult_male_dead
+                  ),
+                      'adultFemale', json_build_object(
+                    'stranded', sp.adult_female_stranded,
+                    'injured', sp.adult_female_injured,
+                    'dead', sp.adult_female_dead
+                 ),
+                      'subAdult', json_build_object(
+                    'stranded', sp.subadult_stranded,
+                    'injured', sp.subadult_injured,
+                    'dead', sp.subadult_dead
+                  )
+            )) FROM reporting_species sp
+              WHERE sp.reporting_id = s.id
+            ) AS species,
+            s.images,
+			s.submitted_at AS "submittedAt",
+            json_build_object(
+              'name', u.name,
+              'phoneNumber', u.phone_number
+            ) AS "submittedBy"
+          FROM reportings s 
+          JOIN users u ON s.submitted_by = u.id
+          WHERE s.submitted_by = $1 AND s.submission_context = $2
+          ORDER BY s.observed_at DESC
+        ) AS sighting_row;`,
       [id, type],
     );
 
@@ -147,29 +157,40 @@ export const postReporting = async (req: Request, res: Response) => {
       const species = req.body.species || [];
 
       for (const spec of species) {
+        const { adult, adultMale, adultFemale, subAdult } = spec?.ageGroup;
+
         await pool.query(
           `INSERT INTO reporting_species (reporting_id, species,
+		    adult_stranded, adult_injured, adult_dead,
             adult_male_stranded, adult_male_injured, adult_male_dead,
             adult_female_stranded, adult_female_injured, adult_female_dead,
-            subadult_stranded, subadult_injured, subadult_dead) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            subadult_stranded, subadult_injured, subadult_dead) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
           [
             query.rows[0].id,
             spec.type,
-            spec?.adultMale?.stranded || 0,
-            spec?.adultMale?.injured || 0,
-            spec?.adultMale?.dead || 0,
-            spec?.adultFemale?.stranded || 0,
-            spec?.adultFemale?.injured || 0,
-            spec?.adultFemale?.dead || 0,
-            spec?.subAdult?.stranded || 0,
-            spec?.subAdult?.injured || 0,
-            spec?.subAdult?.dead || 0,
+            adult?.stranded || 0,
+            adult?.injured || 0,
+            adult?.dead || 0,
+            adultMale?.stranded || 0,
+            adultMale?.injured || 0,
+            adultMale?.dead || 0,
+            adultFemale?.stranded || 0,
+            adultFemale?.injured || 0,
+            adultFemale?.dead || 0,
+            subAdult?.stranded || 0,
+            subAdult?.injured || 0,
+            subAdult?.dead || 0,
           ],
         );
 
         await pool.query(
-          `INSERT INTO reporting_causes (reporting_id, species, cause) VALUES ($1, $2, $3)`,
-          [query.rows[0].id, spec.type, spec?.cause || null],
+          `INSERT INTO reporting_causes (reporting_id, species, cause, other_cause) VALUES ($1, $2, $3, $4)`,
+          [
+            query.rows[0].id,
+            spec.type,
+            spec?.cause || ["OTHER"],
+            spec?.otherCause || null,
+          ],
         );
       }
     }
