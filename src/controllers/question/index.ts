@@ -85,6 +85,21 @@ export const getAllQuestions = async (
       return;
     }
 
+    const questionType =
+      typeInUpperCase.charAt(0) + typeInUpperCase.slice(1).toLowerCase();
+
+    const cachedKey = `question_set:${req.params.type.toLowerCase()}`;
+    const cachedData = await redisClient.get(cachedKey);
+
+    if (cachedData) {
+      const parsedData = JSON.parse(cachedData);
+      res.status(200).json({
+        message: `${questionType} questions fetched successfully`,
+        result: { questions: parsedData, speciesAgeGroups },
+      });
+      return;
+    }
+
     const [
       districtData,
       threatsData,
@@ -133,7 +148,7 @@ export const getAllQuestions = async (
       return undefined;
     };
 
-    const allQuestions: FormattedQuestion[] = (
+    const questions: FormattedQuestion[] = (
       questionsQuery.rows as QuestionRow[]
     )
       .sort((a, b) => a.index - b.index)
@@ -161,15 +176,13 @@ export const getAllQuestions = async (
         return baseQuestion;
       });
 
-    const questionType =
-      typeInUpperCase === "REPORTING" ? "Reporting" : "Sighting";
+    await redisClient.set(cachedKey, JSON.stringify(questions), {
+      EX: 604800, // 7 days (60 * 60 * 24 * 7)
+    });
 
     res.status(200).json({
       message: `${questionType} questions fetched successfully`,
-      result: {
-        questions: allQuestions,
-        speciesAgeGroups,
-      },
+      result: { questions, speciesAgeGroups },
     });
   } catch (error) {
     console.error(error);
