@@ -13,7 +13,7 @@ export const getSpecies = async (req: Request, res: Response) => {
           json_build_object(
             'label', json_build_object('en', label_en, 'bn', label_bn),
             'value', value,
-            'adultImg', adult_img,
+            'image', image,
 			'ageGroup', age_group
           )
         ) AS species

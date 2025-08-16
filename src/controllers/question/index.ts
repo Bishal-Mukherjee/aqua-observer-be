@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
-import { DistrictBlocks } from "@/controllers/question/types";
+import { DistrictBlocks } from "@/controllers\\question\\types";
 
 const speciesAgeGroups = {
   duo: [
@@ -11,7 +11,7 @@ const speciesAgeGroups = {
     },
     {
       label: { en: "Calves", bn: "ক্যালভেস" },
-      value: "calf",
+      value: "subAdult",
     },
   ],
   trio: [
@@ -28,102 +28,144 @@ const speciesAgeGroups = {
       value: "subAdult",
     },
   ],
-};
+} as const;
 
-export const getAllQuestions = async (req: Request, res: Response) => {
+interface LabelOption {
+  label: { en: string; bn: string };
+  value: string;
+}
+
+type OptionKey =
+  | "districts"
+  | "threats"
+  | "fishing_gears"
+  | "water_bodies"
+  | "water_body_conditions"
+  | "weather_conditions";
+
+interface QuestionRow {
+  topic: string;
+  label_en: string;
+  label_bn: string;
+  option_key: OptionKey;
+  type: string;
+  is_optional: boolean;
+  index: number;
+}
+
+interface DataObject {
+  districts: LabelOption[] | null;
+  threats: LabelOption[] | null;
+  fishing_gears: LabelOption[] | null;
+  water_bodies: LabelOption[] | null;
+  water_body_conditions: LabelOption[] | null;
+  weather_conditions: LabelOption[] | null;
+}
+
+interface FormattedQuestion {
+  topic: string;
+  label: { en: string; bn: string };
+  optionKey?: string;
+  options?: LabelOption[];
+  type: string;
+  isOptional: boolean;
+}
+
+export const getAllQuestions = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    // const cacheKey = "question_set:v1";
-    // const cachedData = await redisClient.get(cacheKey);
+    const typeInUpperCase = req.params.type.toUpperCase();
 
-    const speciesQuery = await pool.query(`
-        SELECT json_agg(
-          json_build_object(
-            'label', json_build_object('en', label_en, 'bn', label_bn),
-            'value', value,
-            'adultImg', adult_img,
-			'ageGroup', age_group
-          )
-        ) AS species
-        FROM species
-      `);
+    const allowedTypes = ["REPORTING", "SIGHTING"];
 
-    // 'subAdultImg', sub_adult_img
-    // if (cachedData) {
-    //   const cachedQuestions = JSON.parse(cachedData);
-
-    //   const questions = cachedQuestions.map((q: any) => {
-    //     if (q.option_key === "species") {
-    //       return { ...q, options: speciesQuery.rows[0].species };
-    //     }
-    //     return q;
-    //   });
-
-    //   res.status(200).json({
-    //     message: "Questions fetched successfully",
-    //     result: questions,
-    //   });
-    //   return;
-    // }
+    if (!allowedTypes.includes(typeInUpperCase)) {
+      res.status(400).json({ message: "Invalid question type" });
+      return;
+    }
 
     const [
       districtData,
-      dangersData,
+      threatsData,
       fishingGearsData,
       waterBodiesData,
       waterBodyConditionData,
       weatherConditionData,
       questionsQuery,
     ] = await Promise.all([
-      redisClient.json.get("districts"),
-      redisClient.json.get("dangers"),
-      redisClient.json.get("fishing_gears"),
-      redisClient.json.get("water_bodies"),
-      redisClient.json.get("water_body_conditions"),
-      redisClient.json.get("weather_conditions"),
-      pool.query("SELECT * FROM questions"),
+      redisClient.json.get("districts") as Promise<LabelOption[] | null>,
+      redisClient.json.get("threats") as Promise<LabelOption[] | null>,
+      redisClient.json.get("fishing_gears") as Promise<LabelOption[] | null>,
+      redisClient.json.get("water_bodies") as Promise<LabelOption[] | null>,
+      redisClient.json.get("water_body_conditions") as Promise<
+        LabelOption[] | null
+      >,
+      redisClient.json.get("weather_conditions") as Promise<
+        LabelOption[] | null
+      >,
+      pool.query("SELECT * FROM questions WHERE contexts @> $1::text[]", [
+        [typeInUpperCase],
+      ]),
     ]);
 
-    const dataObj = {
+    const dataObj: DataObject = {
       districts: districtData,
-      dangers: dangersData,
+      threats: threatsData,
       fishing_gears: fishingGearsData,
       water_bodies: waterBodiesData,
       water_body_conditions: waterBodyConditionData,
       weather_conditions: weatherConditionData,
-      species: speciesQuery.rows[0].species,
     };
 
-    const allQuestions = questionsQuery.rows
-      .sort((a, b) => a.index - b.index)
-      .map((question) => {
-        const { option_key } = question;
-        const options = option_key
-          ? dataObj[option_key as keyof typeof dataObj]
-          : null;
+    const appendOptions = (
+      optionKey: string | null,
+      options: LabelOption[] | null,
+    ): { optionKey: string; options: LabelOption[] } | undefined => {
+      if (options && options.length > 0) {
+        return { optionKey: optionKey!, options };
+      }
 
-        return {
+      if (optionKey && !options) {
+        return { optionKey, options: [] };
+      }
+
+      return undefined;
+    };
+
+    const allQuestions: FormattedQuestion[] = (
+      questionsQuery.rows as QuestionRow[]
+    )
+      .sort((a, b) => a.index - b.index)
+      .map((question): FormattedQuestion => {
+        const optionKey: OptionKey = question.option_key;
+        const optionsObj = appendOptions(optionKey, dataObj[optionKey]);
+
+        const baseQuestion: FormattedQuestion = {
           topic: question.topic,
           label: {
             en: question.label_en,
             bn: question.label_bn,
           },
-          ...(option_key ? { option_key } : {}),
-          ...(options ? { options } : {}),
           type: question.type,
           isOptional: question.is_optional,
         };
+
+        if (optionsObj) {
+          return {
+            ...baseQuestion,
+            ...optionsObj,
+          };
+        }
+
+        return baseQuestion;
       });
 
-    // const cacheSafeQuestions = allQuestions.map((q) =>
-    //   q.option_key === "species" ? { ...q, options: null } : q,
-    // );
-
-    // await redisClient.set(cacheKey, JSON.stringify(cacheSafeQuestions), {
-    //   EX: 604800, // 7 days (60 * 60 * 24 * 7)
-    // });
+    const questionType =
+      typeInUpperCase === "REPORTING" ? "Reporting" : "Sighting";
 
     res.status(200).json({
-      message: "Questions fetched successfully",
+      message: `${questionType} questions fetched successfully`,
       result: {
         questions: allQuestions,
         speciesAgeGroups,

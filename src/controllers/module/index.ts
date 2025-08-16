@@ -35,6 +35,7 @@ export const getModules = async (
 		'thumbnail', thumbnail,
 		'url', url,
      	'tier', tier,
+		'type', type,
      	'createdAt', created_at,
 		'lastUpdatedAt', last_updated_at
 	   )) AS result FROM modules WHERE tier = $1;`,

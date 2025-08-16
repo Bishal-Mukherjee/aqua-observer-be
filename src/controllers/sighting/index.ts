@@ -34,15 +34,16 @@ export const postSighting = async (req: Request, res: Response) => {
 
     const species = req.body.species || [];
     for (const spec of species) {
+      const { adult, adultMale, adultFemale, subAdult } = spec.ageGroup || {};
       await pool.query(
         `INSERT INTO sighting_species (sighting_id, species, adult, subadult, adult_male, adult_female) VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           query.rows[0].id,
           spec.type,
-          spec.adult || 0,
-          spec.subadult || 0,
-          spec.adultMale || 0,
-          spec.adultFemale || 0,
+          adult || 0,
+          subAdult || 0,
+          adultMale || 0,
+          adultFemale || 0,
         ],
       );
     }
@@ -62,15 +63,19 @@ export const getAllSightings = async (req: Request, res: Response) => {
       `SELECT json_agg(
          json_build_object(
            'id', o.id,
-           'submittedBy', o.submitted_by,
-           'observedAt', o.observed_at,
+		   'observedAt', o.observed_at,
            'latitude', o.latitude,
            'longitude', o.longitude,
            'altitude', o.altitude,
            'provider', o.provider,
+           'waterBody', o.water_body,
+           'waterBodyCondition', o.water_body_condition,
+           'weatherCondition', o.weather_condition,
            'villageOrGhat', o.village_or_ghat,
            'district', o.district,
            'block', o.block,
+           'threats', o.threats,
+           'fishingGears', o.fishing_gears,
            'species', (
              SELECT json_agg(
                json_build_object(
@@ -84,18 +89,18 @@ export const getAllSightings = async (req: Request, res: Response) => {
              FROM sighting_species os
              WHERE os.sighting_id = o.id
            ),
-		   'waterBodyCondition', o.water_body_condition,
-           'weatherCondition', o.weather_condition,
-           'waterBody', o.water_body,
-           'threats', o.threats,
-           'fishingGears', o.fishing_gears,
            'images', o.images,
            'notes', o.notes,
-           'submittedAt', o.submitted_at,
-           'type', o.submission_context
+		   'type', o.submission_context,
+		   'submittedAt', o.submitted_at,
+           'submittedBy', json_build_object(
+             'name', u.name,
+             'phoneNumber', u.phone_number
+           )
          )
        ) AS results
        FROM sightings o
+       JOIN users u ON o.submitted_by = u.id
        WHERE o.submitted_by = $1`,
       [id],
     );
@@ -121,15 +126,19 @@ export const getSightingsByType = async (req: Request, res: Response) => {
       `SELECT json_agg(
          json_build_object(
            'id', o.id,
-           'submittedBy', o.submitted_by,
            'observedAt', o.observed_at,
            'latitude', o.latitude,
            'longitude', o.longitude,
            'altitude', o.altitude,
            'provider', o.provider,
+           'waterBody', o.water_body,
+           'waterBodyCondition', o.water_body_condition,
+           'weatherCondition', o.weather_condition,
            'villageOrGhat', o.village_or_ghat,
            'district', o.district,
            'block', o.block,
+           'threats', o.threats,
+           'fishingGears', o.fishing_gears,
            'species', (
              SELECT json_agg(
                json_build_object(
@@ -143,18 +152,17 @@ export const getSightingsByType = async (req: Request, res: Response) => {
              FROM sighting_species os
              WHERE os.sighting_id = o.id
            ),
-		   'waterBodyCondition', o.water_body_condition,
-           'weatherCondition', o.weather_condition,
-           'waterBody', o.water_body,
-           'threats', o.threats,
-           'fishingGears', o.fishing_gears,
            'images', o.images,
            'notes', o.notes,
-           'submittedAt', o.submitted_at,
-           'type', o.submission_context
+		   'submittedAt', o.submitted_at,
+           'submittedBy', json_build_object(
+             'name', u.name,
+             'phoneNumber', u.phone_number
+           )
          )
        ) AS results
        FROM sightings o
+       JOIN users u ON o.submitted_by = u.id
        WHERE o.submitted_by = $1 AND o.submission_context = $2`,
       [id, type],
     );
