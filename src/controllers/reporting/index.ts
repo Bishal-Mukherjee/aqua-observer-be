@@ -5,6 +5,13 @@ export const getAllReportings = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
 
+    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesMap = new Map();
+
+    speciesQuery.rows.forEach((species) => {
+      speciesMap.set(species.value, species.age_group);
+    });
+
     const query = await pool.query(
       `SELECT json_agg(sighting_row) AS result
        FROM (
@@ -21,17 +28,22 @@ export const getAllReportings = async (req: Request, res: Response) => {
             (SELECT json_agg(
                 json_build_object(
                   'type', sp.species,
-                      'adultMale', json_build_object(
+				    'adult', json_build_object(
+                    'stranded', sp.adult_stranded,
+                    'injured', sp.adult_injured,
+                    'dead', sp.adult_dead
+                  ),
+                    'adultMale', json_build_object(
                     'stranded', sp.adult_male_stranded,
                     'injured', sp.adult_male_injured,
                     'dead', sp.adult_male_dead
                   ),
-                      'adultFemale', json_build_object(
+                    'adultFemale', json_build_object(
                     'stranded', sp.adult_female_stranded,
                     'injured', sp.adult_female_injured,
                     'dead', sp.adult_female_dead
                  ),
-                      'subAdult', json_build_object(
+                    'subAdult', json_build_object(
                     'stranded', sp.subadult_stranded,
                     'injured', sp.subadult_injured,
                     'dead', sp.subadult_dead
@@ -54,11 +66,32 @@ export const getAllReportings = async (req: Request, res: Response) => {
       [id],
     );
 
-    const sightings = query.rows[0];
+    const reportings = query.rows[0]?.result?.map((reporting: any) => {
+      const reportingSpecies = reporting.species.map((spec: any) => {
+        if (speciesMap.get(spec.type) === "duo") {
+          return {
+            type: spec.type,
+            adult: spec.adult || 0,
+            subAdult: spec.subAdult || 0,
+          };
+        }
+        return {
+          type: spec.type,
+          adultMale: spec.adultMale || 0,
+          adultFemale: spec.adultFemale || 0,
+          subAdult: spec.subAdult || 0,
+        };
+      });
+
+      return {
+        ...reporting,
+        species: reportingSpecies,
+      };
+    });
 
     res.status(200).json({
       message: "Reportings fetched successfully",
-      result: sightings.result || [],
+      result: reportings || [],
     });
   } catch (error) {
     console.error(error);
@@ -70,6 +103,13 @@ export const getReportingsByType = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
     const { type } = req.params;
+
+    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesMap = new Map();
+
+    speciesQuery.rows.forEach((species) => {
+      speciesMap.set(species.value, species.age_group);
+    });
 
     const query = await pool.query(
       `SELECT json_agg(sighting_row) AS result
@@ -87,7 +127,12 @@ export const getReportingsByType = async (req: Request, res: Response) => {
             (SELECT json_agg(
                 json_build_object(
                   'type', sp.species,
-                      'adultMale', json_build_object(
+					'adult', json_build_object(
+						'stranded', sp.adult_stranded,
+						'injured', sp.adult_injured,
+						'dead', sp.adult_dead
+					),
+					'adultMale', json_build_object(
                     'stranded', sp.adult_male_stranded,
                     'injured', sp.adult_male_injured,
                     'dead', sp.adult_male_dead
@@ -119,11 +164,32 @@ export const getReportingsByType = async (req: Request, res: Response) => {
       [id, type],
     );
 
-    const reportings = query.rows[0];
+    const reportings = query.rows[0]?.result?.map((reporting: any) => {
+      const reportingSpecies = reporting.species.map((spec: any) => {
+        if (speciesMap.get(spec.type) === "duo") {
+          return {
+            type: spec.type,
+            adult: spec.adult || 0,
+            subAdult: spec.subAdult || 0,
+          };
+        }
+        return {
+          type: spec.type,
+          adultMale: spec.adultMale || 0,
+          adultFemale: spec.adultFemale || 0,
+          subAdult: spec.subAdult || 0,
+        };
+      });
+
+      return {
+        ...reporting,
+        species: reportingSpecies,
+      };
+    });
 
     res.status(200).json({
       message: "Reportings fetched successfully",
-      result: reportings.result || [],
+      result: reportings || [],
     });
   } catch (error) {
     console.error(error);
