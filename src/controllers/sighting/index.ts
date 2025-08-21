@@ -59,6 +59,13 @@ export const getAllSightings = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
 
+    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesMap = new Map();
+
+    speciesQuery.rows.forEach((species) => {
+      speciesMap.set(species.value, species.age_group);
+    });
+
     const query = await pool.query(
       `SELECT json_agg(
          json_build_object(
@@ -105,11 +112,32 @@ export const getAllSightings = async (req: Request, res: Response) => {
       [id],
     );
 
-    const sightings = query.rows[0]?.results || [];
+    const sightings = query.rows[0]?.results?.map((sighting: any) => {
+      const sightingSpecies = sighting.species.map((spec: any) => {
+        if (speciesMap.get(spec.type) === "duo") {
+          return {
+            type: spec.type,
+            adult: spec.adult || 0,
+            subAdult: spec.subadult || 0,
+          };
+        }
+        return {
+          type: spec.type,
+          adultMale: spec.adultMale || 0,
+          adultFemale: spec.adultFemale || 0,
+          subAdult: spec.subAdult || 0,
+        };
+      });
+
+      return {
+        ...sighting,
+        species: sightingSpecies,
+      };
+    });
 
     res.status(200).json({
       message: "Sightings retrieved successfully",
-      result: sightings,
+      result: sightings || [],
     });
   } catch (err) {
     console.error(err);
@@ -121,6 +149,13 @@ export const getSightingsByType = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
     const { type } = req.params;
+
+    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesMap = new Map();
+
+    speciesQuery.rows.forEach((species) => {
+      speciesMap.set(species.value, species.age_group);
+    });
 
     const query = await pool.query(
       `SELECT json_agg(
@@ -167,11 +202,32 @@ export const getSightingsByType = async (req: Request, res: Response) => {
       [id, type],
     );
 
-    const sightings = query.rows[0]?.results || [];
+    const sightings = query.rows[0]?.results?.map((sighting: any) => {
+      const sightingSpecies = sighting.species.map((spec: any) => {
+        if (speciesMap.get(spec.type) === "duo") {
+          return {
+            type: spec.type,
+            adult: spec.adult || 0,
+            subAdult: spec.subadult || 0,
+          };
+        }
+        return {
+          type: spec.type,
+          adultMale: spec.adultMale || 0,
+          adultFemale: spec.adultFemale || 0,
+          subAdult: spec.subAdult || 0,
+        };
+      });
+
+      return {
+        ...sighting,
+        species: sightingSpecies,
+      };
+    });
 
     res.status(200).json({
       message: "Sightings retrieved successfully",
-      result: sightings,
+      result: sightings || [],
     });
   } catch (err) {
     console.error(err);
