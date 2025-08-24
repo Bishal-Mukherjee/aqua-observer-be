@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
+import { Sighting } from "@/controllers/sighting/types";
 
 export const postSighting = async (req: Request, res: Response) => {
   try {
@@ -36,7 +37,7 @@ export const postSighting = async (req: Request, res: Response) => {
     for (const spec of species) {
       const { adult, adultMale, adultFemale, subAdult } = spec.ageGroup || {};
       await pool.query(
-        `INSERT INTO sighting_species (sighting_id, species, adult, subadult, adult_male, adult_female) VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO sighting_species (sighting_id, species, adult, sub_adult, adult_male, adult_female) VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           query.rows[0].id,
           spec.type,
@@ -88,7 +89,7 @@ export const getAllSightings = async (req: Request, res: Response) => {
                json_build_object(
                  'type', os.species,
                  'adult', os.adult,
-                 'subadult', os.subadult,
+                 'subAdult', os.sub_adult,
                  'adultMale', os.adult_male,
                  'adultFemale', os.adult_female
                )
@@ -112,13 +113,13 @@ export const getAllSightings = async (req: Request, res: Response) => {
       [id],
     );
 
-    const sightings = query.rows[0]?.results?.map((sighting: any) => {
-      const sightingSpecies = sighting.species.map((spec: any) => {
+    const sightings = query.rows[0]?.results?.map((sighting: Sighting) => {
+      const sightingSpecies = sighting.species.map((spec) => {
         if (speciesMap.get(spec.type) === "duo") {
           return {
             type: spec.type,
             adult: spec.adult || 0,
-            subAdult: spec.subadult || 0,
+            subAdult: spec.subAdult || 0,
           };
         }
         return {
@@ -179,7 +180,7 @@ export const getSightingsByType = async (req: Request, res: Response) => {
                json_build_object(
                  'type', os.species,
                  'adult', os.adult,
-                 'subadult', os.subadult,
+                 'subAdult', os.sub_adult,
                  'adultMale', os.adult_male,
                  'adultFemale', os.adult_female
                )
@@ -202,13 +203,13 @@ export const getSightingsByType = async (req: Request, res: Response) => {
       [id, type],
     );
 
-    const sightings = query.rows[0]?.results?.map((sighting: any) => {
-      const sightingSpecies = sighting.species.map((spec: any) => {
+    const sightings = query.rows[0]?.results?.map((sighting: Sighting) => {
+      const sightingSpecies = sighting.species.map((spec) => {
         if (speciesMap.get(spec.type) === "duo") {
           return {
             type: spec.type,
             adult: spec.adult || 0,
-            subAdult: spec.subadult || 0,
+            subAdult: spec.subAdult || 0,
           };
         }
         return {

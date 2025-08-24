@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
+import { calculateLatestLastUpdatedAt } from "@/utils/date";
 
 export const getTiers = async (req: Request, res: Response) => {
   try {
@@ -13,20 +14,15 @@ export const getTiers = async (req: Request, res: Response) => {
     const { tier: userTier } = userQuery[0];
 
     const tierQuery = await pool.query(
-      `SELECT json_agg (json_build_object(
-     	'id', id,
-     	'title', json_build_object(
-        	'en', title_en,
-        	'bn', title_bn
-      	),
-     	'description', json_build_object(
-        	'en', description_en,
-        	'bn', description_bn
-      	),
-     	'tier', tier,
-     	'createdAt', created_at,
-	 	'lastUpdatedAt', last_updated_at
-	   )) AS result FROM tiers;`,
+      `SELECT t.id, t.title_en, t.title_bn, t.description_en, t.description_bn, 
+              t.tier, t.created_at, t.last_updated_at,
+              COALESCE(m.modules, 0) AS modules
+       FROM tiers t
+       LEFT JOIN (
+         SELECT tier, COUNT(*) AS modules
+         FROM modules
+         GROUP BY tier
+       ) m ON t.tier = m.tier;`,
     );
 
     if (tierQuery.rows.length === 0) {
@@ -34,18 +30,67 @@ export const getTiers = async (req: Request, res: Response) => {
       return;
     }
 
-    const accessibleTiers = tierQuery.rows[0].result
-      .filter(
-        (tier: { tier: string }) => tier.tier.localeCompare(userTier) <= 0,
-      )
-      .sort((a: { tier: string }, b: { tier: string }) =>
-        b.tier.localeCompare(a.tier),
-      );
+    const tiers = tierQuery.rows.map((tier) => ({
+      id: tier.id,
+      title: {
+        en: tier.title_en,
+        bn: tier.title_bn,
+      },
+      description: {
+        en: tier.description_en,
+        bn: tier.description_bn,
+      },
+      tier: tier.tier,
+      modules: tier.modules,
+      createdAt: tier.created_at,
+      lastUpdatedAt: tier.last_updated_at,
+    }));
+
+    const accessibleTiers = tiers
+      .filter((tier) => tier.tier.localeCompare(userTier) <= 0)
+      .sort((a, b) => b.tier.localeCompare(a.tier));
+
+    const latestLastUpdatedAt = calculateLatestLastUpdatedAt(accessibleTiers);
 
     res.status(200).json({
       message: "Tiers fetched successfully",
-      result: accessibleTiers,
+      result: { tiers: accessibleTiers, lastUpdatedAt: latestLastUpdatedAt },
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const upgradeTier = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.user;
+
+    const { rows: userQuery } = await pool.query(
+      "SELECT * FROM users WHERE id = $1",
+      [id],
+    );
+
+    const { tier: userTier } = userQuery[0];
+
+    const tierLevel = userTier.split("_").pop();
+    const nextTierLevel = `TIER_${parseInt(tierLevel) + 1}`;
+
+    const tierQuery = await pool.query("SELECT id from tiers WHERE tier = $1", [
+      nextTierLevel,
+    ]);
+
+    if (tierQuery.rows.length === 0) {
+      res.status(404).json({ message: "Next tier not found" });
+      return;
+    }
+
+    await pool.query("UPDATE users SET tier = $1 WHERE id = $2", [
+      nextTierLevel,
+      id,
+    ]);
+
+    res.status(200).json({ message: "User tier upgraded successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

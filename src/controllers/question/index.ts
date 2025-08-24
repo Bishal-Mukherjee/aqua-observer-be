@@ -1,75 +1,16 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
-import { DistrictBlocks } from "@/controllers\\question\\types";
-
-const speciesAgeGroups = {
-  duo: [
-    {
-      label: { en: "Adults", bn: "বয়স্ক" },
-      value: "adult",
-    },
-    {
-      label: { en: "Calves", bn: "ক্যালভেস" },
-      value: "subAdult",
-    },
-  ],
-  trio: [
-    {
-      label: { en: "Adult Male", bn: "বয়স্ক পুরুষ" },
-      value: "adultMale",
-    },
-    {
-      label: { en: "Adult Female", bn: "বয়স্ক মহিলা" },
-      value: "adultFemale",
-    },
-    {
-      label: { en: "Sub-Adults/Juveniles", bn: "অর্ধবয়স্ক/কিশোর" },
-      value: "subAdult",
-    },
-  ],
-} as const;
-
-interface LabelOption {
-  label: { en: string; bn: string };
-  value: string;
-}
-
-type OptionKey =
-  | "districts"
-  | "threats"
-  | "fishing_gears"
-  | "water_bodies"
-  | "water_body_conditions"
-  | "weather_conditions";
-
-interface QuestionRow {
-  topic: string;
-  label_en: string;
-  label_bn: string;
-  option_key: OptionKey;
-  type: string;
-  is_optional: boolean;
-  index: number;
-}
-
-interface DataObject {
-  districts: LabelOption[] | null;
-  threats: LabelOption[] | null;
-  fishing_gears: LabelOption[] | null;
-  water_bodies: LabelOption[] | null;
-  water_body_conditions: LabelOption[] | null;
-  weather_conditions: LabelOption[] | null;
-}
-
-interface FormattedQuestion {
-  topic: string;
-  label: { en: string; bn: string };
-  optionKey?: string;
-  options?: LabelOption[];
-  type: string;
-  isOptional: boolean;
-}
+import {
+  DistrictBlocks,
+  LabelOption,
+  OptionKey,
+  QuestionRow,
+  DataObject,
+  FormattedQuestion,
+} from "@/controllers/question/types";
+import { speciesAgeGroups } from "@/constants/species-age-group";
+import { calculateLatestLastUpdatedAt } from "@/utils/date";
 
 export const getAllQuestions = async (
   req: Request,
@@ -93,9 +34,11 @@ export const getAllQuestions = async (
 
     if (cachedData) {
       const parsedData = JSON.parse(cachedData);
+      const latestLastUpdatedAt = calculateLatestLastUpdatedAt(parsedData);
       res.status(200).json({
         message: `${questionType} questions fetched successfully`,
         result: { questions: parsedData, speciesAgeGroups },
+        lastUpdatedAt: latestLastUpdatedAt,
       });
       return;
     }
@@ -164,6 +107,7 @@ export const getAllQuestions = async (
           },
           type: question.type,
           isOptional: question.is_optional,
+          lastUpdatedAt: question.last_updated_at,
         };
 
         if (optionsObj) {
@@ -176,13 +120,19 @@ export const getAllQuestions = async (
         return baseQuestion;
       });
 
+    const latestLastUpdatedAt = calculateLatestLastUpdatedAt(questions);
+
     await redisClient.set(cachedKey, JSON.stringify(questions), {
       EX: 604800, // 7 days (60 * 60 * 24 * 7)
     });
 
     res.status(200).json({
       message: `${questionType} questions fetched successfully`,
-      result: { questions, speciesAgeGroups },
+      result: {
+        questions,
+        speciesAgeGroups,
+        lastUpdatedAt: latestLastUpdatedAt,
+      },
     });
   } catch (error) {
     console.error(error);
