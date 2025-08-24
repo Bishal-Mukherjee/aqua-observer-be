@@ -54,7 +54,8 @@ export const getTiers = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Tiers fetched successfully",
-      result: { tiers: accessibleTiers, lastUpdatedAt: latestLastUpdatedAt },
+      result: accessibleTiers,
+      lastUpdatedAt: latestLastUpdatedAt,
     });
   } catch (error) {
     console.error(error);

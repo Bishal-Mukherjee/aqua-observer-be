@@ -131,8 +131,8 @@ export const getAllQuestions = async (
       result: {
         questions,
         speciesAgeGroups,
-        lastUpdatedAt: latestLastUpdatedAt,
       },
+      lastUpdatedAt: latestLastUpdatedAt,
     });
   } catch (error) {
     console.error(error);
