@@ -10,7 +10,7 @@ import { redisClient } from "@/config/redis";
 import { config } from "@/config/config";
 import { rateLimiter } from "@/utils/rate-limit";
 import { router as apiRoutes } from "@/routes";
-import { errorHandler } from "@/middlewares/errorHandler";
+import { errorHandler } from "@/middlewares/error-handler";
 
 const app = express();
 
