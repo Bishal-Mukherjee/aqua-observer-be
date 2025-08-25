@@ -278,12 +278,21 @@ export const signin = async (
       return;
     }
 
-    const response = await sendCode(phoneNumber);
+    if (!isTest) {
+      const response = await sendCode(phoneNumber);
 
-    if (response.status !== "approved" && response.status !== "pending") {
-      res.status(500).json({ message: "Failed to send OTP" });
-      return;
+      if (response.status !== "approved" && response.status !== "pending") {
+        res.status(500).json({ message: "Failed to send OTP" });
+        return;
+      }
     }
+
+    // const response = await sendCode(phoneNumber);
+
+    // if (response.status !== "approved" && response.status !== "pending") {
+    //   res.status(500).json({ message: "Failed to send OTP" });
+    //   return;
+    // }
 
     res.status(200).json({
       message: "OTP sent successfully",
