@@ -58,6 +58,7 @@ export const getAllReportings = async (req: Request, res: Response) => {
             s.images,
             s.submission_context AS "type",
             s.submitted_at AS "submittedAt",
+			s.is_cached AS "isCached",
             json_build_object(
               'name', u.name,
               'phoneNumber', u.phone_number
@@ -157,6 +158,7 @@ export const getReportingsByType = async (req: Request, res: Response) => {
               WHERE sp.reporting_id = s.id
             ) AS species,
             s.images,
+			s.is_cached AS "isCached",
 			s.submitted_at AS "submittedAt",
             json_build_object(
               'name', u.name,
@@ -209,7 +211,7 @@ export const postReporting = async (req: Request, res: Response) => {
     const { type } = req.params;
 
     const query = await pool.query(
-      `INSERT INTO reportings (submitted_by, observed_at, latitude, longitude, altitude, provider, village_or_ghat, district, block, images, submission_context) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      `INSERT INTO reportings (submitted_by, observed_at, latitude, longitude, altitude, provider, village_or_ghat, district, block, images, submission_context, is_cached) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
       [
         id,
         req.body.observedAt,
@@ -222,6 +224,7 @@ export const postReporting = async (req: Request, res: Response) => {
         req.body.block,
         req.body.images,
         type,
+        req.body.isCached || false,
       ],
     );
 

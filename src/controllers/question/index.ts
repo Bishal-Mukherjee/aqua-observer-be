@@ -10,7 +10,6 @@ import {
   FormattedQuestion,
 } from "@/controllers/question/types";
 import { speciesAgeGroups } from "@/constants/species-age-group";
-import { calculateLatestLastUpdatedAt } from "@/utils/date";
 
 export const getAllQuestions = async (
   req: Request,
@@ -34,11 +33,9 @@ export const getAllQuestions = async (
 
     if (cachedData) {
       const parsedData = JSON.parse(cachedData);
-      const latestLastUpdatedAt = calculateLatestLastUpdatedAt(parsedData);
       res.status(200).json({
         message: `${questionType} questions fetched successfully`,
         result: { questions: parsedData, speciesAgeGroups },
-        lastUpdatedAt: latestLastUpdatedAt,
       });
       return;
     }
@@ -120,8 +117,6 @@ export const getAllQuestions = async (
         return baseQuestion;
       });
 
-    const latestLastUpdatedAt = calculateLatestLastUpdatedAt(questions);
-
     await redisClient.set(cachedKey, JSON.stringify(questions), {
       EX: 604800, // 7 days (60 * 60 * 24 * 7)
     });
@@ -132,7 +127,6 @@ export const getAllQuestions = async (
         questions,
         speciesAgeGroups,
       },
-      lastUpdatedAt: latestLastUpdatedAt,
     });
   } catch (error) {
     console.error(error);

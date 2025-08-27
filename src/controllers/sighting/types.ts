@@ -23,6 +23,7 @@ export interface Sighting {
   images: string[];
   notes: string;
   type: string;
+  isCached: boolean;
   submittedAt: string;
   submittedBy: {
     name: string;

@@ -33,6 +33,7 @@ export interface Reporting {
   }>;
   images: string[];
   type: string;
+  isCached: boolean;
   submittedAt: string;
   submittedBy: {
     name: string;
