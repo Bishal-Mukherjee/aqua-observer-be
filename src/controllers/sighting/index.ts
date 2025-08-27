@@ -10,8 +10,8 @@ export const postSighting = async (req: Request, res: Response) => {
     const query = await pool.query(
       `INSERT INTO sightings (submitted_by, observed_at, latitude, longitude, altitude, 
 	  provider, village_or_ghat, district, block, water_body_condition, weather_condition,
-	   water_body, threats, fishing_gears, images, notes, submission_context) 
-	   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+	   water_body, threats, fishing_gears, images, notes, submission_context, is_cached) 
+	   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
       [
         id,
         req.body.observedAt,
@@ -30,6 +30,7 @@ export const postSighting = async (req: Request, res: Response) => {
         req.body.images,
         req.body.notes,
         type,
+        req.body.isCached || false
       ],
     );
 
@@ -100,6 +101,7 @@ export const getAllSightings = async (req: Request, res: Response) => {
            'images', o.images,
            'notes', o.notes,
 		   'type', o.submission_context,
+           'isCached', o.is_cached,
 		   'submittedAt', o.submitted_at,
            'submittedBy', json_build_object(
              'name', u.name,
@@ -190,7 +192,8 @@ export const getSightingsByType = async (req: Request, res: Response) => {
            ),
            'images', o.images,
            'notes', o.notes,
-		   'submittedAt', o.submitted_at,
+           'isCached', o.is_cached,
+           'submittedAt', o.submitted_at,
            'submittedBy', json_build_object(
              'name', u.name,
              'phoneNumber', u.phone_number

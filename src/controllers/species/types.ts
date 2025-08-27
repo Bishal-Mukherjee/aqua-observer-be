@@ -2,7 +2,9 @@ export interface SpeciesCause {
   species: string;
   causalities: Array<{
     label: {
-      [language: string]: string;
+      //   [language: string]: string;
+      en: string;
+      bn: string;
     };
     value: string;
     image: string;
@@ -11,7 +13,9 @@ export interface SpeciesCause {
 
 export interface Species {
   label: {
-    [language: string]: string;
+    // [language: string]: string;
+    en: string;
+    bn: string;
   };
   value: string;
   image: string;

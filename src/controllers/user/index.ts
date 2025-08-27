@@ -29,9 +29,32 @@ export const getUserDetails = async (req: Request, res: Response) => {
       return;
     }
 
+    const { rows: questionsRows } = await pool.query(
+      `SELECT MAX(last_updated_at) AS lastUpdatedAt FROM questions`,
+    );
+    const questionsLastUpdatedAt = questionsRows[0].lastupdatedat;
+
+    const { rows: speciesRows } = await pool.query(
+      `SELECT MAX(last_updated_at) AS lastUpdatedAt FROM species`,
+    );
+    const speciesLastUpdatedAt = speciesRows[0].lastupdatedat;
+
+    const { rows: modulesRows } = await pool.query(
+      `SELECT MAX(last_updated_at) AS lastUpdatedAt FROM modules`,
+    );
+    const modulesLastUpdatedAt = modulesRows[0].lastupdatedat;
+
     res.status(200).json({
       message: "User details fetched successfully",
       result: query.rows[0],
+      config: {
+        lastUpdatedAt: {
+          questions: questionsLastUpdatedAt,
+          species: speciesLastUpdatedAt,
+          modules: modulesLastUpdatedAt,
+          //   notifications: new Date().toISOString(),
+        },
+      },
     });
   } catch (error) {
     console.error(error);

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
-import { calculateLatestLastUpdatedAt } from "@/utils/date";
 
 export const getTiers = async (req: Request, res: Response) => {
   try {
@@ -50,12 +49,9 @@ export const getTiers = async (req: Request, res: Response) => {
       .filter((tier) => tier.tier.localeCompare(userTier) <= 0)
       .sort((a, b) => b.tier.localeCompare(a.tier));
 
-    const latestLastUpdatedAt = calculateLatestLastUpdatedAt(accessibleTiers);
-
     res.status(200).json({
       message: "Tiers fetched successfully",
       result: accessibleTiers,
-      lastUpdatedAt: latestLastUpdatedAt,
     });
   } catch (error) {
     console.error(error);

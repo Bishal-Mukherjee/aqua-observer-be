@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
-import { calculateLatestLastUpdatedAt } from "@/utils/date";
 import { Species, SpeciesCause } from "@/controllers/species/types";
 
 export const getSpecies = async (req: Request, res: Response) => {
@@ -25,25 +24,22 @@ export const getSpecies = async (req: Request, res: Response) => {
 
     const speciesData: Species[] = speciesQuery.rows[0]?.species || [];
 
-    const mergedData: Species[] = speciesData
+    const mergedData = speciesData
       .map((species: Species) => {
         return {
           ...species,
           causes: speciesCauses
-            ? speciesCauses.filter(
+            ? speciesCauses.find(
                 (cause: SpeciesCause) => cause.species === species.value,
-              )
+              )?.causalities
             : undefined,
         };
       })
-      .sort((a: Species, b: Species) => a.label.en.localeCompare(b.label.en));
-
-    const latestLastUpdatedAt = calculateLatestLastUpdatedAt(speciesData);
+      .sort((a, b) => a.label.en.localeCompare(b.label.en));
 
     res.status(200).json({
       message: "Species retrieved successfully",
       result: mergedData,
-      lastUpdatedAt: latestLastUpdatedAt,
     });
   } catch (err) {
     console.error(err);
