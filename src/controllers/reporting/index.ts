@@ -1,17 +1,18 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
-import { Species } from "@/controllers/species/types";
 import { Reporting } from "@/controllers/reporting/types";
 
 export const getAllReportings = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
 
-    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesQuery = await pool.query(
+      "SELECT value, age_group FROM species",
+    );
     const speciesMap = new Map<string, string>();
 
-    speciesQuery.rows.forEach((species: Species) => {
-      speciesMap.set(species.value, species.ageGroup);
+    speciesQuery.rows.forEach((species) => {
+      speciesMap.set(species.value, species.age_group);
     });
 
     // Fetch reportings
@@ -111,12 +112,16 @@ export const getReportingsByType = async (req: Request, res: Response) => {
     const { id } = req.user;
     const { type } = req.params;
 
-    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesQuery = await pool.query(
+      "SELECT value, age_group FROM species",
+    );
     const speciesMap = new Map();
 
-    speciesQuery.rows.forEach((species) => {
-      speciesMap.set(species.value, species.age_group);
-    });
+    speciesQuery.rows.forEach(
+      (species: { value: string; age_group: string }) => {
+        speciesMap.set(species.value, species.age_group);
+      },
+    );
 
     const query = await pool.query(
       `SELECT json_agg(sighting_row) AS result
@@ -270,7 +275,7 @@ export const postReporting = async (req: Request, res: Response) => {
       }
     }
 
-    res.status(201).json({ message: "Sighting created successfully" });
+    res.status(201).json({ message: "Reporting created successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
