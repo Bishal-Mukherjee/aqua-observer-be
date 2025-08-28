@@ -61,7 +61,9 @@ export const getAllSightings = async (req: Request, res: Response) => {
   try {
     const { id } = req.user;
 
-    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesQuery = await pool.query(
+      "SELECT value, age_group FROM species",
+    );
     const speciesMap = new Map();
 
     speciesQuery.rows.forEach((species) => {
@@ -156,7 +158,9 @@ export const getSightingsByType = async (req: Request, res: Response) => {
     const { id } = req.user;
     const { type } = req.params;
 
-    const speciesQuery = await pool.query("SELECT * FROM species");
+    const speciesQuery = await pool.query(
+      "SELECT value, age_group FROM species",
+    );
     const speciesMap = new Map();
 
     speciesQuery.rows.forEach((species) => {

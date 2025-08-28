@@ -71,33 +71,52 @@ export const getModules = async (
 };
 
 export const getOnboardingModules = async (
-  req: Request<{ tier: string }>,
+  req: Request<any, any, any, { page?: string }>,
   res: Response,
 ) => {
   try {
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const { rows: countRows } = await pool.query(
+      "SELECT COUNT(*) FROM modules WHERE tier = $1",
+      ["ONBOARDING"],
+    );
+    const totalItems = parseInt(countRows[0].count, 10);
+    const totalPages = Math.ceil(totalItems / limit);
+
     const { rows: modulesQuery } = await pool.query(
       `SELECT json_agg (json_build_object(
-     	'id', id,
-     	'title', json_build_object(
-        	'en', title_en,
-        	'bn', title_bn
-      	),
-     	'description', json_build_object(
-        	'en', description_en,
-        	'bn', description_bn
-      	),
-		'thumbnail', thumbnail,
-		'url', url,
-     	'tier', tier,
-     	'createdAt', created_at,
-		'lastUpdatedAt', last_updated_at
-	   )) AS result FROM modules WHERE tier = $1;`,
-      ["ONBOARDING"],
+         'id', id,
+         'title', json_build_object(
+            'en', title_en,
+            'bn', title_bn
+          ),
+         'description', json_build_object(
+            'en', description_en,
+            'bn', description_bn
+          ),
+        'thumbnail', thumbnail,
+        'url', url,
+         'tier', tier,
+         'createdAt', created_at,
+        'lastUpdatedAt', last_updated_at
+       )) AS result FROM (
+         SELECT * FROM modules WHERE tier = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3
+       ) AS paged_modules;`,
+      ["ONBOARDING", limit, offset],
     );
 
     res.status(200).json({
       message: "Modules fetched successfully",
       result: modulesQuery[0].result,
+      pagination: {
+        page,
+        totalPages,
+      },
     });
   } catch (error) {
     console.error(error);
