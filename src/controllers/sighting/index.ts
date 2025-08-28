@@ -30,7 +30,7 @@ export const postSighting = async (req: Request, res: Response) => {
         req.body.images,
         req.body.notes,
         type,
-        req.body.isCached || false
+        req.body.isCached || false,
       ],
     );
 
@@ -72,7 +72,7 @@ export const getAllSightings = async (req: Request, res: Response) => {
       `SELECT json_agg(
          json_build_object(
            'id', o.id,
-		   'observedAt', o.observed_at,
+           'observedAt', o.observed_at,
            'latitude', o.latitude,
            'longitude', o.longitude,
            'altitude', o.altitude,
@@ -100,9 +100,9 @@ export const getAllSightings = async (req: Request, res: Response) => {
            ),
            'images', o.images,
            'notes', o.notes,
-		   'type', o.submission_context,
+           'type', o.submission_context,
            'isCached', o.is_cached,
-		   'submittedAt', o.submitted_at,
+           'submittedAt', o.submitted_at,
            'submittedBy', json_build_object(
              'name', u.name,
              'phoneNumber', u.phone_number
@@ -111,7 +111,10 @@ export const getAllSightings = async (req: Request, res: Response) => {
        ) AS results
        FROM sightings o
        JOIN users u ON o.submitted_by = u.id
-       WHERE o.submitted_by = $1`,
+       WHERE o.submitted_by = $1
+       GROUP BY o.id, u.name, u.phone_number, o.submitted_at
+       ORDER BY o.submitted_at DESC
+       `,
       [id],
     );
 
@@ -202,7 +205,10 @@ export const getSightingsByType = async (req: Request, res: Response) => {
        ) AS results
        FROM sightings o
        JOIN users u ON o.submitted_by = u.id
-       WHERE o.submitted_by = $1 AND o.submission_context = $2`,
+       WHERE o.submitted_by = $1 AND o.submission_context = $2
+	   GROUP BY o.id, u.name, u.phone_number, o.submitted_at
+	   ORDER BY o.submitted_at DESC
+	   `,
       [id, type],
     );
 

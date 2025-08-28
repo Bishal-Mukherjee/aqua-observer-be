@@ -66,7 +66,7 @@ export const getAllReportings = async (req: Request, res: Response) => {
           FROM reportings s 
           JOIN users u ON s.submitted_by = u.id
           WHERE s.submitted_by = $1
-          ORDER BY s.observed_at DESC
+          ORDER BY s.submitted_at DESC
         ) AS sighting_row;`,
       [id],
     );
@@ -167,7 +167,7 @@ export const getReportingsByType = async (req: Request, res: Response) => {
           FROM reportings s 
           JOIN users u ON s.submitted_by = u.id
           WHERE s.submitted_by = $1 AND s.submission_context = $2
-          ORDER BY s.observed_at DESC
+          ORDER BY s.submitted_at DESC
         ) AS sighting_row;`,
       [id, type],
     );
