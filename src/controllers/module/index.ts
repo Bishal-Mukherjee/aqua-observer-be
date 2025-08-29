@@ -97,9 +97,10 @@ export const getOnboardingModules = async (
             'en', description_en,
             'bn', description_bn
           ),
-        'thumbnail', thumbnail,
-        'url', url,
+         'thumbnail', thumbnail,
+         'url', url,
          'tier', tier,
+         'type', type,
          'createdAt', created_at,
         'lastUpdatedAt', last_updated_at
        )) AS result FROM (
