@@ -52,10 +52,10 @@ export const authenticate = async (
 
     const userStatus = result.rows[0].status;
 
-    if (userStatus === "BLOCKED") {
-      res
-        .status(423)
-        .json({ message: "You have been blocked by the administrator" });
+    if (userStatus === "SUSPENDED") {
+      res.status(423).json({
+        message: "Your account has been suspended by the administrator",
+      });
       return;
     }
 
