@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { redisClient } from "@/config/redis";
 import {
-  DistrictBlocks,
   LabelOption,
   OptionKey,
   QuestionRow,
@@ -41,7 +40,7 @@ export const getAllQuestions = async (
     }
 
     const [
-      districtData,
+      //   districtData,
       threatsData,
       fishingGearsData,
       waterBodiesData,
@@ -49,7 +48,7 @@ export const getAllQuestions = async (
       weatherConditionData,
       questionsQuery,
     ] = await Promise.all([
-      redisClient.json.get("districts") as Promise<LabelOption[] | null>,
+      //   redisClient.json.get("districts") as Promise<LabelOption[] | null>,
       redisClient.json.get("threats") as Promise<LabelOption[] | null>,
       redisClient.json.get("fishing_gears") as Promise<LabelOption[] | null>,
       redisClient.json.get("water_bodies") as Promise<LabelOption[] | null>,
@@ -59,13 +58,14 @@ export const getAllQuestions = async (
       redisClient.json.get("weather_conditions") as Promise<
         LabelOption[] | null
       >,
-      pool.query("SELECT * FROM questions WHERE contexts @> $1::text[]", [
-        [typeInUpperCase],
-      ]),
+      pool.query(
+        "SELECT index, topic, label_en, label_bn, option_key, type, is_optional FROM questions WHERE contexts @> $1::text[]",
+        [[typeInUpperCase]],
+      ),
     ]);
 
     const dataObj: DataObject = {
-      districts: districtData,
+      //   districts: districtData,
       threats: threatsData,
       fishing_gears: fishingGearsData,
       water_bodies: waterBodiesData,
@@ -104,7 +104,6 @@ export const getAllQuestions = async (
           },
           type: question.type,
           isOptional: question.is_optional,
-          lastUpdatedAt: question.last_updated_at,
         };
 
         if (optionsObj) {
@@ -128,29 +127,6 @@ export const getAllQuestions = async (
         speciesAgeGroups,
       },
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getBlocks = async (req: Request, res: Response) => {
-  try {
-    const { district } = req.params;
-
-    const blocks = (await redisClient.json.get(
-      "blocks",
-    )) as DistrictBlocks | null;
-
-    if (blocks && blocks[district]) {
-      res.status(200).json({
-        message: "Blocks fetched successfully",
-        result: blocks[district],
-      });
-      return;
-    }
-
-    res.status(200).json({ message: "Blocks not found", result: [] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

@@ -18,7 +18,7 @@ export interface LabelOption {
 }
 
 export type OptionKey =
-  | "districts"
+  //   | "districts"
   | "threats"
   | "fishing_gears"
   | "water_bodies"
@@ -37,7 +37,7 @@ export interface QuestionRow {
 }
 
 export interface DataObject {
-  districts: LabelOption[] | null;
+  //   districts: LabelOption[] | null;
   threats: LabelOption[] | null;
   fishing_gears: LabelOption[] | null;
   water_bodies: LabelOption[] | null;
@@ -52,5 +52,4 @@ export interface FormattedQuestion {
   options?: LabelOption[];
   type: string;
   isOptional: boolean;
-  lastUpdatedAt: string;
 }

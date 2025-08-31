@@ -53,6 +53,13 @@ export const signup = async (
       return;
     }
 
+    if (query.rows[0].status === "SUSPENDED") {
+      res.status(423).json({
+        message: "Your account has been suspended by the administrator",
+      });
+      return;
+    }
+
     await pool.query(
       "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, last_active_at = NOW() WHERE id = $6",
       [name, email, gender, age, occupation, query.rows[0].id],
@@ -128,14 +135,22 @@ export const signin = async (
       expiresIn = "1d", // TODO: Remove this
     } = req.body;
 
+    // TODO: remove this condition
     if (code === WILDCARD_CODE) {
       const query = await pool.query(
-        "SELECT id, name FROM users WHERE phone_number = $1",
+        "SELECT id, name, status FROM users WHERE phone_number = $1",
         [phoneNumber],
       );
 
       if (query.rows.length === 0) {
         res.status(401).json({ message: "User not found" });
+        return;
+      }
+
+      if (query.rows[0].status === "SUSPENDED") {
+        res.status(423).json({
+          message: "Your account has been suspended by the administrator",
+        });
         return;
       }
 
@@ -195,12 +210,19 @@ export const signin = async (
         return;
       } else {
         const query = await pool.query(
-          "SELECT id, name FROM users WHERE phone_number = $1",
+          "SELECT id, name, status FROM users WHERE phone_number = $1",
           [phoneNumber],
         );
 
         if (query.rows.length === 0) {
           res.status(401).json({ message: "User not found" });
+          return;
+        }
+
+        if (query.rows[0].status === "SUSPENDED") {
+          res.status(423).json({
+            message: "Your account has been suspended by the administrator",
+          });
           return;
         }
 
@@ -246,7 +268,7 @@ export const signin = async (
     }
 
     const query = await pool.query(
-      "SELECT id FROM users WHERE phone_number = $1",
+      "SELECT id, status FROM users WHERE phone_number = $1",
       [phoneNumber],
     );
 
@@ -274,6 +296,13 @@ export const signin = async (
       res.status(201).json({
         message: "User created successfully",
         result: { action: "proceed-with-otp" },
+      });
+      return;
+    }
+
+    if (query.rows[0].status === "SUSPENDED") {
+      res.status(423).json({
+        message: "Your account has been suspended by the administrator",
       });
       return;
     }
