@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { Reporting } from "@/controllers/reporting/types";
+import { redisClient } from "@/config/redis";
+import { findBestMatch } from "@/utils/strings";
 
 export const getAllReportings = async (req: Request, res: Response) => {
   try {
@@ -215,6 +217,19 @@ export const postReporting = async (req: Request, res: Response) => {
     const { id } = req.user;
     const { type } = req.params;
 
+    const districts = (await redisClient.json.get("districts")) as {
+      label: { en: string };
+    }[];
+
+    const matchedDistrict = findBestMatch(req.body.district, districts);
+
+    const blocks = (await redisClient.json.get("blocks")) as any;
+
+    const matchedBlock = findBestMatch(
+      req.body.block,
+      blocks[matchedDistrict?.value],
+    );
+
     const query = await pool.query(
       `INSERT INTO reportings (submitted_by, observed_at, latitude, longitude, altitude, provider, village_or_ghat, district, block, images, submission_context, is_cached) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
       [
@@ -225,8 +240,10 @@ export const postReporting = async (req: Request, res: Response) => {
         req.body.altitude,
         req.body.provider,
         req.body.villageOrGhat,
-        req.body.district,
-        req.body.block,
+        matchedDistrict?.matchPercentage > 20
+          ? matchedDistrict.value
+          : "UNKNOWN",
+        matchedBlock?.matchPercentage > 20 ? matchedBlock.value : "UNKNOWN",
         req.body.images,
         type,
         req.body.isCached || false,
