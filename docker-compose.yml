@@ -5,9 +5,6 @@ services:
     build: .
     ports:
       - "${SERVER_PORT:-8080}:8080"
-    depends_on:
-      - db
-      - redis
     environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
