@@ -3,8 +3,6 @@ export interface Reporting {
   observedAt: string;
   latitude: number;
   longitude: number;
-  altitude: number | null;
-  provider: string;
   district: string;
   block: string;
   villageOrGhat: string;
@@ -39,4 +37,40 @@ export interface Reporting {
     name: string;
     phoneNumber: string;
   };
+}
+
+export interface MatchResult {
+  value: string | null;
+  label: string | null;
+  percentage: number;
+}
+
+export interface AgeGroup {
+  stranded?: number;
+  injured?: number;
+  dead?: number;
+}
+
+export interface SpeciesData {
+  type: string;
+  ageGroup: {
+    adult?: AgeGroup;
+    adultMale?: AgeGroup;
+    adultFemale?: AgeGroup;
+    subAdult?: AgeGroup;
+  };
+  cause?: string[];
+  otherCause?: string | null;
+}
+
+export interface ReportingReqBody {
+  observedAt: string;
+  latitude: number;
+  longitude: number;
+  villageOrGhat: string;
+  district: string;
+  block: string;
+  images?: string[];
+  species?: SpeciesData[];
+  isCached?: boolean;
 }

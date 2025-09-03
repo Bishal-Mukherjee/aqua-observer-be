@@ -5,12 +5,12 @@ export const findBestMatch = (input: string, options: any[]) => {
   const [best] = fuse.search(input);
 
   if (!best.score) {
-    return { value: null, label: null, matchPercentage: 0 };
+    return { value: null, label: null, percentage: 0 };
   }
 
   return {
     value: best.item.value,
     label: best.item.label.en,
-    matchPercentage: parseFloat(((1 - best.score) * 100).toFixed(2)),
+    percentage: parseFloat(((1 - best.score) * 100).toFixed(2)),
   };
 };

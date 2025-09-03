@@ -21,7 +21,8 @@ export const getTiers = async (req: Request, res: Response) => {
          SELECT tier, COUNT(*) AS modules
          FROM modules
          GROUP BY tier
-       ) m ON t.tier = m.tier;`,
+       ) m ON t.tier = m.tier
+       WHERE t.is_active = true;`,
     );
 
     if (tierQuery.rows.length === 0) {

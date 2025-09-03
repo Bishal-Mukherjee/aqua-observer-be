@@ -1,59 +1,122 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
-import { Sighting } from "@/controllers/sighting/types";
+import { LIVE_SIGHTING, UNKNOWN } from "@/constants/constants";
+import {
+  Sighting,
+  SightingReqBody,
+  MatchResult,
+} from "@/controllers/sighting/types";
+import { postSightingSchema } from "@/controllers/sighting/validations";
+import { redisClient } from "@/config/redis";
+import { findBestMatch } from "@/utils/strings";
 
 export const postSighting = async (req: Request, res: Response) => {
+  const { error } = postSightingSchema.validate(req.body);
+
+  if (error) {
+    res
+      .status(400)
+      .json({ error: "Validation error", message: error.details[0].message });
+    return;
+  }
+
+  const client = await pool.connect();
+
   try {
     const { id } = req.user;
     const { type } = req.params;
+    const body = req.body as SightingReqBody;
 
-    const query = await pool.query(
-      `INSERT INTO sightings (submitted_by, observed_at, latitude, longitude, altitude, 
-	  provider, village_or_ghat, district, block, water_body_condition, weather_condition,
-	   water_body, threats, fishing_gears, images, notes, submission_context, is_cached) 
-	   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+    const districtInUpperCase = String(body.district).toUpperCase();
+    const blockInUpperCase = String(body.block).toUpperCase();
+
+    let m: string | MatchResult = districtInUpperCase || UNKNOWN;
+    let b: string | MatchResult = blockInUpperCase || UNKNOWN;
+
+    if (type === LIVE_SIGHTING && m !== UNKNOWN && b !== UNKNOWN) {
+      const [districtsData, blocksData] = (await Promise.all([
+        redisClient.json.get("districts"),
+        redisClient.json.get("blocks"),
+      ])) as [any[], Record<string, any[]>];
+
+      const matchedDistrict = await Promise.resolve(
+        findBestMatch(m as string, districtsData),
+      );
+
+      const matchedBlock = await Promise.resolve(
+        findBestMatch(b as string, blocksData[matchedDistrict.value] || []),
+      );
+
+      m = matchedDistrict.percentage > 20 ? matchedDistrict.value : UNKNOWN;
+      b = matchedBlock.percentage > 20 ? matchedBlock.value : UNKNOWN;
+    }
+
+    await client.query("BEGIN");
+
+    const query = await client.query(
+      `INSERT INTO sightings (submitted_by, observed_at, latitude, longitude, 
+      village_or_ghat, district, block, water_body_condition, weather_condition,
+       water_body, threats, fishing_gears, images, notes, submission_context, is_cached) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
       [
         id,
-        req.body.observedAt,
-        req.body.latitude,
-        req.body.longitude,
-        req.body.altitude,
-        req.body.provider,
-        req.body.villageOrGhat,
-        req.body.district,
-        req.body.block,
-        req.body.waterBodyCondition,
-        req.body.weatherCondition,
-        req.body.waterBody,
-        req.body.threats,
-        req.body.fishingGears,
-        req.body.images,
-        req.body.notes,
+        body.observedAt,
+        body.latitude,
+        body.longitude,
+        body.villageOrGhat,
+        m,
+        b,
+        body.waterBodyCondition,
+        body.weatherCondition,
+        body.waterBody,
+        body.threats,
+        body.fishingGears || [],
+        body.images || [],
+        body.notes,
         type,
-        req.body.isCached || false,
+        body.isCached || false,
       ],
     );
 
-    const species = req.body.species || [];
-    for (const spec of species) {
-      const { adult, adultMale, adultFemale, subAdult } = spec.ageGroup || {};
-      await pool.query(
-        `INSERT INTO sighting_species (sighting_id, species, adult, sub_adult, adult_male, adult_female) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          query.rows[0].id,
-          spec.type,
-          adult || 0,
-          subAdult || 0,
-          adultMale || 0,
-          adultFemale || 0,
-        ],
+    const sightingId = query.rows[0]?.id;
+
+    if (!sightingId) {
+      throw new Error("Failed to create sighting record");
+    }
+
+    const species = body.species || [];
+
+    if (species.length > 0) {
+      await Promise.all(
+        species.map(async (spec) => {
+          const { adult, adultMale, adultFemale, subAdult } =
+            spec.ageGroup || {};
+
+          return client.query(
+            `INSERT INTO sighting_species (sighting_id, species, adult, sub_adult, adult_male, adult_female) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              sightingId,
+              spec.type,
+              adult || 0,
+              subAdult || 0,
+              adultMale || 0,
+              adultFemale || 0,
+            ],
+          );
+        }),
       );
     }
 
-    res.status(201).json({ message: "Observation created successfully" });
+    await client.query("COMMIT");
+
+    res.status(201).json({ message: "Sighting created successfully" });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error(err);
-    res.status(500).json({ error: "Failed to create observation" });
+    res.status(500).json({ error: "Failed to create sighting" });
+  } finally {
+    client.release();
   }
 };
 
@@ -77,8 +140,6 @@ export const getAllSightings = async (req: Request, res: Response) => {
            'observedAt', o.observed_at,
            'latitude', o.latitude,
            'longitude', o.longitude,
-           'altitude', o.altitude,
-           'provider', o.provider,
            'waterBody', o.water_body,
            'waterBodyCondition', o.water_body_condition,
            'weatherCondition', o.weather_condition,
@@ -174,8 +235,6 @@ export const getSightingsByType = async (req: Request, res: Response) => {
            'observedAt', o.observed_at,
            'latitude', o.latitude,
            'longitude', o.longitude,
-           'altitude', o.altitude,
-           'provider', o.provider,
            'waterBody', o.water_body,
            'waterBodyCondition', o.water_body_condition,
            'weatherCondition', o.weather_condition,
