@@ -8,7 +8,7 @@ import {
   DataObject,
   FormattedQuestion,
 } from "@/controllers/question/types";
-import { speciesAgeGroups } from "@/constants/species-age-group";
+import { speciesAgeGroups } from "@/constants/constants";
 
 export const getAllQuestions = async (
   req: Request,

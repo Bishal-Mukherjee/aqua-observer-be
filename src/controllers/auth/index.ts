@@ -7,6 +7,7 @@ import { config } from "@/config/config";
 import {
   signinSchema,
   signupSchema,
+  resendCodeSchema,
   refreshTokenSchema,
   logoutSchema,
 } from "@/controllers/auth/validations";
@@ -330,6 +331,45 @@ export const signin = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to signin user" });
+  }
+};
+
+export const resendCode = async (
+  req: Request<{}, {}, { phoneNumber: string; isTest?: boolean }>,
+  res: Response<{
+    message: string;
+    error?: string;
+  }>,
+) => {
+  try {
+    const { error } = resendCodeSchema.validate(req.body);
+
+    if (error) {
+      res.status(400).json({
+        error: "Validation error",
+        message: error.details[0].message,
+      });
+      return;
+    }
+
+    const { phoneNumber, isTest } = req.body;
+
+    if (isTest) {
+      res.status(200).json({ message: "OTP resend successfully" });
+      return;
+    }
+
+    const response = await sendCode(phoneNumber);
+
+    if (response.status !== "approved" && response.status !== "pending") {
+      res.status(500).json({ message: "Failed to send OTP" });
+      return;
+    }
+
+    res.status(200).json({ message: "OTP resend successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to resend OTP" });
   }
 };
 

@@ -38,6 +38,18 @@ export const signinSchema = Joi.object({
   expiresIn: Joi.string().optional(),
 });
 
+export const resendCodeSchema = Joi.object({
+  phoneNumber: Joi.string()
+    .pattern(/^\+91[6-9]\d{9}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "Invalid phone number",
+      "string.empty": "Phone number is required",
+      "any.required": "Phone number is required",
+    }),
+  isTest: Joi.boolean().optional(),
+});
+
 export const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string().required().messages({
     "any.required": "Refresh token is required",

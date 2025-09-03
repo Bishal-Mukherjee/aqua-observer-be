@@ -24,3 +24,7 @@ export const speciesAgeGroups = {
     },
   ],
 } as const;
+
+export const LIVE_REPORTING = "LIVE_REPORTING",
+  LIVE_SIGHTING = "LIVE_SIGHTING",
+  UNKNOWN = "UNKNOWN";

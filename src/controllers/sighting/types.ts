@@ -3,8 +3,6 @@ export interface Sighting {
   observedAt: string;
   latitude: number;
   longitude: number;
-  altitude: number | null;
-  provider: string;
   waterBody: string;
   waterBodyCondition: string;
   weatherCondition: string;
@@ -29,4 +27,40 @@ export interface Sighting {
     name: string;
     phoneNumber: string;
   };
+}
+
+export interface MatchResult {
+  value: string | null;
+  label: string | null;
+  percentage: number;
+}
+
+export interface AgeGroup {
+  adult?: number;
+  adultMale?: number;
+  adultFemale?: number;
+  subAdult?: number;
+}
+
+export interface SpeciesData {
+  type: string;
+  ageGroup: AgeGroup;
+}
+
+export interface SightingReqBody {
+  observedAt: string;
+  latitude: number;
+  longitude: number;
+  villageOrGhat?: string;
+  district?: string;
+  block?: string;
+  waterBodyCondition: string;
+  weatherCondition: string;
+  waterBody: string;
+  threats: string[];
+  fishingGears?: string[];
+  images?: string[];
+  notes?: string;
+  species: SpeciesData[];
+  isCached?: boolean;
 }

@@ -25,7 +25,7 @@ export const getModules = async (
     }
 
     const { rows: countRows } = await pool.query(
-      "SELECT COUNT(*) FROM modules WHERE tier = $1",
+      "SELECT COUNT(*) FROM modules WHERE tier = $1 AND is_active = true",
       [tier],
     );
     const totalItems = parseInt(countRows[0].count, 10);
@@ -49,16 +49,21 @@ export const getModules = async (
          'createdAt', created_at,
         'lastUpdatedAt', last_updated_at
        )) AS result FROM (
-         SELECT * FROM modules WHERE tier = $1
-         ORDER BY created_at DESC
+         SELECT * FROM modules WHERE tier = $1 AND is_active = true
          LIMIT $2 OFFSET $3
        ) AS paged_modules;`,
       [tier, limit, offset],
     );
 
+    const sortedResults = modulesQuery[0].result.sort(
+      (a: { title: { en: string } }, b: { title: { en: string } }) => {
+        return a.title.en.localeCompare(b.title.en);
+      },
+    );
+
     res.status(200).json({
       message: "Modules fetched successfully",
-      result: modulesQuery[0].result,
+      result: sortedResults,
       pagination: {
         page,
         totalPages,
@@ -80,7 +85,7 @@ export const getOnboardingModules = async (
     const offset = (page - 1) * limit;
 
     const { rows: countRows } = await pool.query(
-      "SELECT COUNT(*) FROM modules WHERE tier = $1",
+      "SELECT COUNT(*) FROM modules WHERE tier = $1 AND is_active = true",
       ["ONBOARDING"],
     );
     const totalItems = parseInt(countRows[0].count, 10);
@@ -104,16 +109,21 @@ export const getOnboardingModules = async (
          'createdAt', created_at,
         'lastUpdatedAt', last_updated_at
        )) AS result FROM (
-         SELECT * FROM modules WHERE tier = $1
-         ORDER BY created_at DESC
+         SELECT * FROM modules WHERE tier = $1 AND is_active = true
          LIMIT $2 OFFSET $3
        ) AS paged_modules;`,
       ["ONBOARDING", limit, offset],
     );
 
+    const sortedResults = modulesQuery[0].result.sort(
+      (a: { title: { en: string } }, b: { title: { en: string } }) => {
+        return a.title.en.localeCompare(b.title.en);
+      },
+    );
+
     res.status(200).json({
       message: "Modules fetched successfully",
-      result: modulesQuery[0].result,
+      result: sortedResults,
       pagination: {
         page,
         totalPages,

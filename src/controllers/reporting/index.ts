@@ -1,8 +1,145 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
-import { Reporting } from "@/controllers/reporting/types";
+import { LIVE_REPORTING, UNKNOWN } from "@/constants/constants";
+import {
+  Reporting,
+  ReportingReqBody,
+  MatchResult,
+} from "@/controllers/reporting/types";
+import { postReportingSchema } from "@/controllers/reporting/validations";
 import { redisClient } from "@/config/redis";
 import { findBestMatch } from "@/utils/strings";
+
+export const postReporting = async (req: Request, res: Response) => {
+  const { error } = postReportingSchema.validate(req.body);
+
+  if (error) {
+    res
+      .status(400)
+      .json({ error: "Validation error", message: error.details[0].message });
+    return;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.user;
+    const { type } = req.params;
+    const body = req.body as ReportingReqBody;
+
+    const districtInUpperCase = String(body.district).toUpperCase();
+    const blockInUpperCase = String(body.block).toUpperCase();
+
+    let m: string | MatchResult = districtInUpperCase || UNKNOWN;
+    let b: string | MatchResult = blockInUpperCase || UNKNOWN;
+
+    if (type === LIVE_REPORTING && m !== UNKNOWN && b !== UNKNOWN) {
+      const [districtsData, blocksData] = (await Promise.all([
+        redisClient.json.get("districts"),
+        redisClient.json.get("blocks"),
+      ])) as [any[], Record<string, any[]>];
+
+      const matchedDistrict = await Promise.resolve(
+        findBestMatch(m as string, districtsData),
+      );
+
+      const matchedBlock = await Promise.resolve(
+        findBestMatch(b as string, blocksData[matchedDistrict.value] || []),
+      );
+
+      m = matchedDistrict.percentage > 20 ? matchedDistrict.value : UNKNOWN;
+      b = matchedBlock.percentage > 20 ? matchedBlock.value : UNKNOWN;
+    }
+
+    await client.query("BEGIN");
+
+    const reportingQuery = await client.query(
+      `INSERT INTO reportings (
+        submitted_by, observed_at, latitude, longitude,
+        village_or_ghat, district, block, images,
+        submission_context, is_cached
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id`,
+      [
+        id,
+        body.observedAt,
+        body.latitude,
+        body.longitude,
+        body.villageOrGhat,
+        m,
+        b,
+        body.images || [],
+        type,
+        body.isCached || false,
+      ],
+    );
+
+    const reportingId = reportingQuery.rows[0]?.id;
+
+    if (!reportingId) {
+      throw new Error("Failed to create reporting record");
+    }
+
+    const species = body.species || [];
+
+    if (species.length > 0) {
+      await Promise.all(
+        species.map(async (spec) => {
+          const { adult, adultMale, adultFemale, subAdult } = spec.ageGroup;
+
+          return Promise.all([
+            client.query(
+              `INSERT INTO reporting_species (
+                reporting_id, species,
+                adult_stranded, adult_injured, adult_dead,
+                adult_male_stranded, adult_male_injured, adult_male_dead,
+                adult_female_stranded, adult_female_injured, adult_female_dead,
+                sub_adult_stranded, sub_adult_injured, sub_adult_dead
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+              [
+                reportingId,
+                spec.type,
+                adult?.stranded || 0,
+                adult?.injured || 0,
+                adult?.dead || 0,
+                adultMale?.stranded || 0,
+                adultMale?.injured || 0,
+                adultMale?.dead || 0,
+                adultFemale?.stranded || 0,
+                adultFemale?.injured || 0,
+                adultFemale?.dead || 0,
+                subAdult?.stranded || 0,
+                subAdult?.injured || 0,
+                subAdult?.dead || 0,
+              ],
+            ),
+            client.query(
+              `INSERT INTO reporting_causes (
+                reporting_id, species, cause, other_cause
+              ) VALUES ($1, $2, $3, $4)`,
+              [
+                reportingId,
+                spec.type,
+                spec.cause || ["OTHER"],
+                spec.otherCause || null,
+              ],
+            ),
+          ]);
+        }),
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({ message: "Reporting created successfully" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error in postReporting:", error);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    client.release();
+  }
+};
 
 export const getAllReportings = async (req: Request, res: Response) => {
   try {
@@ -26,8 +163,6 @@ export const getAllReportings = async (req: Request, res: Response) => {
             s.observed_at AS "observedAt",
             s.latitude,
             s.longitude,
-            s.altitude,
-            s.provider,
             s.district,
             s.block,
             s.village_or_ghat AS "villageOrGhat",
@@ -133,8 +268,6 @@ export const getReportingsByType = async (req: Request, res: Response) => {
             s.observed_at AS "observedAt",
             s.latitude,
             s.longitude,
-            s.altitude,
-            s.provider,
             s.district,
             s.block,
             s.village_or_ghat AS "villageOrGhat",
@@ -206,93 +339,6 @@ export const getReportingsByType = async (req: Request, res: Response) => {
       message: "Reportings fetched successfully",
       result: reportings || [],
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const postReporting = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.user;
-    const { type } = req.params;
-
-    const districts = (await redisClient.json.get("districts")) as {
-      label: { en: string };
-    }[];
-
-    const matchedDistrict = findBestMatch(req.body.district, districts);
-
-    const blocks = (await redisClient.json.get("blocks")) as any;
-
-    const matchedBlock = findBestMatch(
-      req.body.block,
-      blocks[matchedDistrict?.value],
-    );
-
-    const query = await pool.query(
-      `INSERT INTO reportings (submitted_by, observed_at, latitude, longitude, altitude, provider, village_or_ghat, district, block, images, submission_context, is_cached) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
-      [
-        id,
-        req.body.observedAt,
-        req.body.latitude,
-        req.body.longitude,
-        req.body.altitude,
-        req.body.provider,
-        req.body.villageOrGhat,
-        matchedDistrict?.matchPercentage > 20
-          ? matchedDistrict.value
-          : "UNKNOWN",
-        matchedBlock?.matchPercentage > 20 ? matchedBlock.value : "UNKNOWN",
-        req.body.images,
-        type,
-        req.body.isCached || false,
-      ],
-    );
-
-    if (query.rows[0]?.id) {
-      const species = req.body.species || [];
-
-      for (const spec of species) {
-        const { adult, adultMale, adultFemale, subAdult } = spec?.ageGroup;
-
-        await pool.query(
-          `INSERT INTO reporting_species (reporting_id, species,
-		    adult_stranded, adult_injured, adult_dead,
-            adult_male_stranded, adult_male_injured, adult_male_dead,
-            adult_female_stranded, adult_female_injured, adult_female_dead,
-            sub_adult_stranded, sub_adult_injured, sub_adult_dead) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-          [
-            query.rows[0].id,
-            spec.type,
-            adult?.stranded || 0,
-            adult?.injured || 0,
-            adult?.dead || 0,
-            adultMale?.stranded || 0,
-            adultMale?.injured || 0,
-            adultMale?.dead || 0,
-            adultFemale?.stranded || 0,
-            adultFemale?.injured || 0,
-            adultFemale?.dead || 0,
-            subAdult?.stranded || 0,
-            subAdult?.injured || 0,
-            subAdult?.dead || 0,
-          ],
-        );
-
-        await pool.query(
-          `INSERT INTO reporting_causes (reporting_id, species, cause, other_cause) VALUES ($1, $2, $3, $4)`,
-          [
-            query.rows[0].id,
-            spec.type,
-            spec?.cause || ["OTHER"],
-            spec?.otherCause || null,
-          ],
-        );
-      }
-    }
-
-    res.status(201).json({ message: "Reporting created successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
