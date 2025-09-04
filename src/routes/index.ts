@@ -24,6 +24,6 @@ router.use("/reporting", authenticate, reportingRoutes);
 router.use("/sighting", authenticate, sightingRoutes);
 router.use("/question", authenticate, questionRoutes);
 router.use("/tier", authenticate, tierRoutes);
-router.use("/module", moduleRoutes);
+router.use("/module", authenticate, moduleRoutes);
 
 export { router };
