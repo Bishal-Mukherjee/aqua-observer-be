@@ -11,6 +11,7 @@ import tierRoutes from "@/routes/tier";
 import moduleRoutes from "@/routes/module";
 import reportingRoutes from "@/routes/reporting";
 import submissionRoutes from "@/routes/submission";
+import notificationRoutes from "@/routes/notifications";
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use("/sighting", authenticate, sightingRoutes);
 router.use("/question", authenticate, questionRoutes);
 router.use("/tier", authenticate, tierRoutes);
 router.use("/module", authenticate, moduleRoutes);
+router.use("/notifications", authenticate, notificationRoutes);
 
 export { router };
