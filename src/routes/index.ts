@@ -10,6 +10,7 @@ import questionRoutes from "@/routes/questions";
 import tierRoutes from "@/routes/tier";
 import moduleRoutes from "@/routes/module";
 import reportingRoutes from "@/routes/reporting";
+import submissionRoutes from "@/routes/submission";
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.use("/health", authenticate, healthRoutes);
 router.use("/user", authenticate, userRoutes);
 router.use("/species", authenticate, speciesRoutes);
 router.use("/region", authenticate, regionRoutes);
+router.use("/submission", authenticate, submissionRoutes);
 router.use("/reporting", authenticate, reportingRoutes);
 router.use("/sighting", authenticate, sightingRoutes);
 router.use("/question", authenticate, questionRoutes);
