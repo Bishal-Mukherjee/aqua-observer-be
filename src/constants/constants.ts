@@ -27,4 +27,6 @@ export const speciesAgeGroups = {
 
 export const LIVE_REPORTING = "LIVE_REPORTING",
   LIVE_SIGHTING = "LIVE_SIGHTING",
-  UNKNOWN = "UNKNOWN";
+  UNKNOWN = "UNKNOWN",
+  ONBOARDED = "ONBOARDED",
+  ACTIVE = "ACTIVE";
