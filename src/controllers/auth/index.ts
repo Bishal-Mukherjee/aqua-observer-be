@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { pool } from "@/config/db";
 import { config } from "@/config/config";
+import { ONBOARDED } from "@/constants/constants";
 import {
   signinSchema,
   signupSchema,
@@ -29,7 +30,11 @@ export const signup = async (
   res: Response<{
     error?: string;
     message: string;
-    result?: { accessToken: string; refreshToken: string };
+    result?: {
+      accessToken: string;
+      refreshToken: string;
+      showOnboardingModules: boolean;
+    };
   }>,
 ): Promise<void> => {
   try {
@@ -62,7 +67,7 @@ export const signup = async (
     }
 
     await pool.query(
-      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, last_active_at = NOW() WHERE id = $6",
+      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, status, last_active_at = NOW() WHERE id = $6",
       [name, email, gender, age, occupation, query.rows[0].id],
     );
 
@@ -93,6 +98,7 @@ export const signup = async (
       result: {
         accessToken,
         refreshToken,
+        showOnboardingModules: query.rows[0].status === ONBOARDED,
       },
     });
   } catch (err) {
@@ -107,7 +113,13 @@ export const signin = async (
   req: Request<
     {},
     {},
-    { phoneNumber: string; code: string; isTest?: boolean; expiresIn?: string }
+    {
+      phoneNumber: string;
+      code: string;
+      isTest?: boolean;
+      expiresIn?: string;
+      showOnboardingModules?: boolean;
+    }
   >,
   res: Response<{
     error?: string;
@@ -116,6 +128,7 @@ export const signin = async (
       accessToken?: string;
       refreshToken?: string;
       action?: "proceed-with-otp" | "proceed-with-signup";
+      showOnboardingModules?: boolean;
     };
   }>,
 ) => {
@@ -196,7 +209,11 @@ export const signin = async (
 
       res.status(200).json({
         message: "User signed in successfully",
-        result: { accessToken, refreshToken },
+        result: {
+          accessToken,
+          refreshToken,
+          showOnboardingModules: query.rows[0].status === ONBOARDED,
+        },
       });
       return;
     }
@@ -262,6 +279,7 @@ export const signin = async (
           result: {
             accessToken,
             refreshToken,
+            showOnboardingModules: query.rows[0].status === ONBOARDED,
           },
         });
         return;

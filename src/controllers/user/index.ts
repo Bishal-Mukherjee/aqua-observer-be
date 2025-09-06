@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
+import { ACTIVE } from "@/constants/constants";
 
 export const getUserDetails = async (req: Request, res: Response) => {
   try {
@@ -56,6 +57,36 @@ export const getUserDetails = async (req: Request, res: Response) => {
         },
       },
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateActivateUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.user;
+
+    const query = await pool.query(`SELECT status FROM users WHERE id = $1`, [
+      id,
+    ]);
+
+    if (query.rows.length === 0) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    if (query.rows[0].status === ACTIVE) {
+      res.status(200).json({ message: "User is already activated" });
+      return;
+    }
+
+    await pool.query(`UPDATE users SET status = $1 WHERE id = $2`, [
+      ACTIVE,
+      id,
+    ]);
+
+    res.status(200).json({ message: "User activated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
