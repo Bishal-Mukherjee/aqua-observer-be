@@ -9,63 +9,59 @@ export const getSubmissions = async (
   try {
     const { id: userId } = req.user;
     const page = parseInt(req.query.page || "1", 10) || 1;
-    const limit = 5;
+    const limit = 10;
     const offset = (page - 1) * limit;
 
-    const [
-      { rows: reportingsCount },
-      { rows: sightingsCount },
-      { rows: reportings },
-      { rows: sightings },
-    ] = await Promise.all([
-      pool.query("SELECT COUNT(*) FROM reportings WHERE submitted_by = $1", [
-        userId,
-      ]),
-      pool.query("SELECT COUNT(*) FROM sightings WHERE submitted_by = $1", [
-        userId,
-      ]),
-      pool.query(
-        `SELECT 
-          id, 
-          observed_at AS "observedAt", 
-          district, 
-          block, 
-          village_or_ghat AS "villageOrGhat", 
-          submission_context AS "type", 
-          submitted_at AS "submittedAt"
+    const countQuery = `
+      SELECT COUNT(*) as total FROM (
+        SELECT id FROM reportings WHERE submitted_by = $1
+        UNION ALL
+        SELECT id FROM sightings WHERE submitted_by = $1
+      ) combined
+    `;
+    const countResult = await pool.query(countQuery, [userId]);
+    const totalRecords = parseInt(countResult.rows[0].total, 10);
+    const totalPages = Math.ceil(totalRecords / limit);
+
+    const submissionsQuery = `
+      SELECT * FROM (
+        SELECT 
+          id,
+          submission_context AS "type",
+          submitted_at AS "submittedAt",
+		  district,
+		  block,
+		  village_or_ghat AS "villageOrGhat",
+		  observed_at AS "observedAt"
         FROM reportings 
         WHERE submitted_by = $1
-        LIMIT $2 OFFSET $3`,
-        [userId, limit, offset],
-      ),
-      pool.query(
-        `SELECT 
-          id, 
-          observed_at AS "observedAt", 
-          district, 
-          block, 
-          village_or_ghat AS "villageOrGhat", 
-          submission_context AS "type", 
-          submitted_at AS "submittedAt"
+        
+        UNION ALL
+        
+        SELECT 
+          id,
+		  submission_context AS "type",
+		  submitted_at AS "submittedAt",
+		  district,
+		  block,
+		  village_or_ghat AS "villageOrGhat",
+		  observed_at AS "observedAt"
         FROM sightings 
         WHERE submitted_by = $1
-        LIMIT $2 OFFSET $3`,
-        [userId, limit, offset],
-      ),
+      ) combined_submissions
+      ORDER BY "submittedAt" DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const submissionsResult = await pool.query(submissionsQuery, [
+      userId,
+      limit,
+      offset,
     ]);
-
-    const totalReportings = parseInt(reportingsCount[0].count, 10);
-    const totalSightings = parseInt(sightingsCount[0].count, 10);
-    const totalItems = totalReportings + totalSightings;
-    const totalPages = Math.ceil(totalItems / limit);
-
-    const submissions = [...reportings, ...sightings].sort(
-      (a, b) => dayjs(b.submittedAt).valueOf() - dayjs(a.submittedAt).valueOf(),
-    );
 
     res.status(200).json({
       message: "Submissions fetched successfully",
-      result: submissions,
+      result: submissionsResult.rows,
       pagination: {
         page,
         totalPages,
