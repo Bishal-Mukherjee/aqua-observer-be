@@ -28,8 +28,8 @@ export const getModules = async (
       "SELECT COUNT(*) FROM modules WHERE tier = $1 AND is_active = true",
       [tier],
     );
-    const totalItems = parseInt(countRows[0].count, 10);
-    const totalPages = Math.ceil(totalItems / limit);
+    const totalRecords = parseInt(countRows[0].count, 10);
+    const totalPages = Math.ceil(totalRecords / limit);
 
     const { rows: modulesQuery } = await pool.query(
       `SELECT json_agg (json_build_object(
@@ -67,6 +67,7 @@ export const getModules = async (
       pagination: {
         page,
         totalPages,
+        totalRecords,
       },
     });
   } catch (error) {
@@ -88,8 +89,8 @@ export const getOnboardingModules = async (
       "SELECT COUNT(*) FROM modules WHERE tier = $1 AND is_active = true",
       ["ONBOARDING"],
     );
-    const totalItems = parseInt(countRows[0].count, 10);
-    const totalPages = Math.ceil(totalItems / limit);
+    const totalRecords = parseInt(countRows[0].count, 10);
+    const totalPages = Math.ceil(totalRecords / limit);
 
     const { rows: modulesQuery } = await pool.query(
       `SELECT json_agg (json_build_object(
@@ -127,6 +128,7 @@ export const getOnboardingModules = async (
       pagination: {
         page,
         totalPages,
+		totalRecords,
       },
     });
   } catch (error) {

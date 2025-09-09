@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import dayjs from "dayjs";
 import { pool } from "@/config/db";
 
 export const getSubmissions = async (
@@ -65,6 +64,7 @@ export const getSubmissions = async (
       pagination: {
         page,
         totalPages,
+        totalRecords,
       },
     });
   } catch (err) {

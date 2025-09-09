@@ -14,8 +14,8 @@ export const getNotifications = async (
       "SELECT COUNT(*) FROM notifications WHERE recipient_role = $1",
       ["SIGHTER"],
     );
-    const totalItems = parseInt(countRows[0].count, 10);
-    const totalPages = Math.ceil(totalItems / limit);
+    const totalRecords = parseInt(countRows[0].count, 10);
+    const totalPages = Math.ceil(totalRecords / limit);
 
     const { rows } = await pool.query(
       `SELECT
@@ -35,6 +35,7 @@ export const getNotifications = async (
       pagination: {
         page,
         totalPages,
+        totalRecords,
       },
     });
   } catch (error) {
