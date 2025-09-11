@@ -45,6 +45,12 @@ export const getUserDetails = async (req: Request, res: Response) => {
     );
     const modulesLastUpdatedAt = modulesRows[0].lastupdatedat;
 
+    const { rows: notificationsRows } = await pool.query(
+      `SELECT MAX(created_at) AS lastUpdatedAt FROM notifications WHERE recipient_role = $1`,
+      [query.rows[0].role],
+    );
+    const notificationsLastUpdatedAt = notificationsRows[0].lastupdatedat;
+
     res.status(200).json({
       message: "User details fetched successfully",
       result: query.rows[0],
@@ -53,7 +59,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
           questions: questionsLastUpdatedAt,
           species: speciesLastUpdatedAt,
           modules: modulesLastUpdatedAt,
-          //   notifications: new Date().toISOString(),
+          notifications: notificationsLastUpdatedAt,
         },
       },
     });
