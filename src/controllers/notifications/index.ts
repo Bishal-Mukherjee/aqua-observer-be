@@ -19,6 +19,7 @@ export const getNotifications = async (
 
     const { rows } = await pool.query(
       `SELECT
+	    id,
         title,
         content,
         created_at AS "createdAt"
