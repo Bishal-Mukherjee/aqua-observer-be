@@ -12,6 +12,8 @@ export const getTiers = async (req: Request, res: Response) => {
 
     const { tier: userTier } = userQuery[0];
 
+    const { rows: countRows } = await pool.query("SELECT COUNT(*) FROM tiers");
+
     const tierQuery = await pool.query(
       `SELECT t.id, t.title_en, t.title_bn, t.description_en, t.description_bn, 
               t.tier, t.created_at, t.last_updated_at,
@@ -50,9 +52,13 @@ export const getTiers = async (req: Request, res: Response) => {
       .filter((tier) => tier.tier.localeCompare(userTier) <= 0)
       .sort((a, b) => b.tier.localeCompare(a.tier));
 
+    const finalTierValue = countRows[0]?.count
+      ? `TIER_${countRows[0].count}`
+      : "TIER_1";
+
     res.status(200).json({
       message: "Tiers fetched successfully",
-      result: accessibleTiers,
+      result: { tiers: accessibleTiers, finalTier: finalTierValue },
     });
   } catch (error) {
     console.error(error);
