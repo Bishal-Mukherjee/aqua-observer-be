@@ -67,7 +67,7 @@ export const signup = async (
     }
 
     await pool.query(
-      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, status, last_active_at = NOW() WHERE id = $6",
+      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, last_active_at = NOW() WHERE id = $6",
       [name, email, gender, age, occupation, query.rows[0].id],
     );
 
