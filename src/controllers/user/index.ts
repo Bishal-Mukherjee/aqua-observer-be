@@ -51,16 +51,19 @@ export const getUserDetails = async (req: Request, res: Response) => {
     );
     const notificationsLastUpdatedAt = notificationsRows[0].lastupdatedat;
 
+    const lastUpdatedAt = {
+      questions: questionsLastUpdatedAt,
+      species: speciesLastUpdatedAt,
+      modules: modulesLastUpdatedAt,
+      notifications: notificationsLastUpdatedAt,
+    };
+
     res.status(200).json({
       message: "User details fetched successfully",
       result: query.rows[0],
       config: {
-        lastUpdatedAt: {
-          questions: questionsLastUpdatedAt,
-          species: speciesLastUpdatedAt,
-          modules: modulesLastUpdatedAt,
-          notifications: notificationsLastUpdatedAt,
-        },
+        lastUpdatedAt,
+        supportEmail: "support@sample.com", // TODO: Replace with actual support email
       },
     });
   } catch (error) {
