@@ -25,6 +25,7 @@ export const signup = async (
       gender?: string;
       age?: number;
       occupation?: string;
+      expiresIn?: string;
     }
   >,
   res: Response<{
@@ -47,7 +48,8 @@ export const signup = async (
       return;
     }
 
-    const { name, phoneNumber, email, gender, age, occupation } = req.body;
+    const { name, phoneNumber, email, gender, age, occupation, expiresIn } =
+      req.body;
 
     const query = await pool.query(
       "SELECT * FROM users WHERE phone_number = $1",
@@ -84,13 +86,15 @@ export const signup = async (
     const refreshToken = crypto.randomBytes(32).toString("hex");
     const refreshTokenHash = await hash(refreshToken, 10);
 
+    // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
+    const expiresInMinutes = !isNaN(Number(expiresIn))
+      ? Number(expiresIn)
+      : 7 * 24 * 60;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
     await pool.query(
       "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, NOW())",
-      [
-        query.rows[0].id,
-        refreshTokenHash,
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      ],
+      [query.rows[0].id, refreshTokenHash, expiresAt],
     );
 
     res.status(201).json({
@@ -146,7 +150,7 @@ export const signin = async (
       phoneNumber,
       code,
       isTest = false,
-      expiresIn = "1d", // TODO: Remove this
+      expiresIn, // TODO: Remove this
     } = req.body;
 
     // TODO: remove this condition
@@ -182,7 +186,7 @@ export const signin = async (
         },
         config.jwtSecret,
         {
-          expiresIn: expiresIn as any, // TODO: Remove this
+          expiresIn: "1d",
         },
       );
 
@@ -190,15 +194,18 @@ export const signin = async (
       const refreshToken = crypto.randomBytes(32).toString("hex");
       const refreshTokenHash = await hash(refreshToken, 10);
 
+      // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
+      // TODO: Remove this
+      const expiresInMinutes = !isNaN(Number(expiresIn))
+        ? Number(expiresIn)
+        : 7 * 24 * 60;
+      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
       // Save refresh token
       await pool.query(
         `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at)
-    	 VALUES ($1, $2, $3, NOW())`,
-        [
-          query.rows[0].id,
-          refreshTokenHash,
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        ],
+         VALUES ($1, $2, $3, NOW())`,
+        [query.rows[0].id, refreshTokenHash, expiresAt],
       );
 
       // Clean up old refresh tokens for this user
@@ -258,20 +265,23 @@ export const signin = async (
           },
           config.jwtSecret,
           {
-            expiresIn: expiresIn as any, // TODO: Remove this
+            expiresIn: "1d",
           },
         );
 
         const refreshToken = crypto.randomBytes(32).toString("hex");
         const refreshTokenHash = await hash(refreshToken, 10);
 
+        // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
+        // TODO: Remove this
+        const expiresInMinutes = !isNaN(Number(expiresIn))
+          ? Number(expiresIn)
+          : 7 * 24 * 60;
+        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
         await pool.query(
           "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, NOW())",
-          [
-            query.rows[0].id,
-            refreshTokenHash,
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          ],
+          [query.rows[0].id, refreshTokenHash, expiresAt],
         );
 
         res.status(200).json({

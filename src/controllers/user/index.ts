@@ -63,7 +63,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
       result: query.rows[0],
       config: {
         lastUpdatedAt,
-        supportEmail: "support@sample.com", // TODO: Replace with actual support email
+        supportEmail: "support@sample.com, support2@sample.com, support3@sample.com", // TODO: Replace with actual support email
       },
     });
   } catch (error) {
