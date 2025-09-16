@@ -180,13 +180,18 @@ export const signin = async (
         return;
       }
 
+      // Calculate access token expiration (expiresIn + 2) minutes
+      const expiresInMinutes = !isNaN(Number(expiresIn))
+        ? Number(expiresIn) + 2
+        : 7 * 24 * 60 + 2;
+
       const accessToken = jwt.sign(
         {
           id: query.rows[0].id,
         },
         config.jwtSecret,
         {
-          expiresIn: "1d",
+          expiresIn: `${expiresInMinutes}m`,
         },
       );
 
@@ -196,10 +201,12 @@ export const signin = async (
 
       // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
       // TODO: Remove this
-      const expiresInMinutes = !isNaN(Number(expiresIn))
+      const refreshExpiresInMinutes = !isNaN(Number(expiresIn))
         ? Number(expiresIn)
         : 7 * 24 * 60;
-      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+      const expiresAt = new Date(
+        Date.now() + refreshExpiresInMinutes * 60 * 1000,
+      );
 
       // Save refresh token
       await pool.query(
@@ -259,13 +266,18 @@ export const signin = async (
           return;
         }
 
+        // Calculate access token expiration (expiresIn + 2) minutes
+        const expiresInMinutes = !isNaN(Number(expiresIn))
+          ? Number(expiresIn) + 2
+          : 7 * 24 * 60 + 2;
+
         const accessToken = jwt.sign(
           {
             id: query.rows[0].id,
           },
           config.jwtSecret,
           {
-            expiresIn: "1d",
+            expiresIn: `${expiresInMinutes}m`,
           },
         );
 
@@ -274,10 +286,12 @@ export const signin = async (
 
         // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
         // TODO: Remove this
-        const expiresInMinutes = !isNaN(Number(expiresIn))
+        const refreshExpiresInMinutes = !isNaN(Number(expiresIn))
           ? Number(expiresIn)
           : 7 * 24 * 60;
-        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+        const expiresAt = new Date(
+          Date.now() + refreshExpiresInMinutes * 60 * 1000,
+        );
 
         await pool.query(
           "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, NOW())",
