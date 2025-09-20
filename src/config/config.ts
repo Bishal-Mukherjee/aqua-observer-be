@@ -21,6 +21,7 @@ interface Config {
     accountSid: string;
     authToken: string;
     serviceSid: string;
+    messagingServiceSid: string;
   };
   jwtSecret: string;
   ssl: {
@@ -70,7 +71,8 @@ const twilioConfig = () => {
   if (
     !process.env.TWILIO_ACCOUNT_SID ||
     !process.env.TWILIO_AUTH_TOKEN ||
-    !process.env.TWILIO_SERVICE_SID
+    !process.env.TWILIO_SERVICE_SID ||
+    !process.env.TWILIO_MESSAGING_SERVICE_SID
   ) {
     throw new Error("Missing twilio configuration");
   }
@@ -79,6 +81,7 @@ const twilioConfig = () => {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     serviceSid: process.env.TWILIO_SERVICE_SID,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
   };
 };
 

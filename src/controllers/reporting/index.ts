@@ -1,3 +1,4 @@
+import EventEmitter from "events";
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
 import { LIVE_REPORTING, UNKNOWN } from "@/constants/constants";
@@ -9,6 +10,14 @@ import {
 import { postReportingSchema } from "@/controllers/reporting/validations";
 import { redisClient } from "@/config/redis";
 import { findBestMatch } from "@/utils/strings";
+import { eventEmitter } from "@/events";
+
+const toTitleCaseLabel = (text: string) =>
+  text
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 
 export const postReporting = async (req: Request, res: Response) => {
   const { error } = postReportingSchema.validate(req.body);
@@ -52,6 +61,11 @@ export const postReporting = async (req: Request, res: Response) => {
     }
 
     await client.query("BEGIN");
+
+    const userQuery = await client.query(
+      "SELECT name, phone_number FROM users WHERE id = $1",
+      [id],
+    );
 
     const reportingQuery = await client.query(
       `INSERT INTO reportings (
@@ -130,6 +144,12 @@ export const postReporting = async (req: Request, res: Response) => {
     }
 
     await client.query("COMMIT");
+    if (type === LIVE_REPORTING) {
+      eventEmitter.emit("reporting:created", {
+        message: `Stranded, injured or dead ${body.species?.map((s) => toTitleCaseLabel(s.type)).join(", ")} reported by ${userQuery.rows[0]?.name} (${userQuery.rows[0]?.phone_number}) at ${body.villageOrGhat}, ${toTitleCaseLabel(String(b))}, ${toTitleCaseLabel(String(m))}.`,
+        district: m,
+      });
+    }
 
     res.status(201).json({ message: "Reporting created successfully" });
   } catch (error) {
