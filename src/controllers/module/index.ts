@@ -55,6 +55,15 @@ export const getModules = async (
       [tier, limit, offset],
     );
 
+    if (!modulesQuery[0].result) {
+      res.status(200).json({
+        message: "Modules fetched successfully",
+        result: [],
+        pagination: { page, totalPages, totalRecords },
+      });
+      return;
+    }
+
     const sortedResults = modulesQuery[0].result.sort(
       (a: { title: { en: string } }, b: { title: { en: string } }) => {
         return a.title.en.localeCompare(b.title.en);
@@ -128,7 +137,7 @@ export const getOnboardingModules = async (
       pagination: {
         page,
         totalPages,
-		totalRecords,
+        totalRecords,
       },
     });
   } catch (error) {
