@@ -21,6 +21,7 @@ interface Config {
     accountSid: string;
     authToken: string;
     serviceSid: string;
+    appHash?: string;
   };
   jwtSecret: string;
 }
@@ -76,6 +77,7 @@ const twilioConfig = () => {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     serviceSid: process.env.TWILIO_SERVICE_SID,
+    appHash: process.env.TWILIO_APP_HASH,
   };
 };
 

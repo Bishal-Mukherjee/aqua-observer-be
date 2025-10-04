@@ -1,25 +1,25 @@
 export const speciesAgeGroups = {
   duo: [
     {
-      label: { en: "Adults", bn: "বয়স্ক" },
+      label: { en: "Adults", bn: "Adults" },
       value: "adult",
     },
     {
-      label: { en: "Calves", bn: "ক্যালভেস" },
+      label: { en: "Calves", bn: "Calves" },
       value: "subAdult",
     },
   ],
   trio: [
     {
-      label: { en: "Adult Male", bn: "বয়স্ক পুরুষ" },
+      label: { en: "Adult Male", bn: "Adult Male" },
       value: "adultMale",
     },
     {
-      label: { en: "Adult Female", bn: "বয়স্ক মহিলা" },
+      label: { en: "Adult Female", bn: "Adult Female" },
       value: "adultFemale",
     },
     {
-      label: { en: "Sub-Adults/Juveniles", bn: "অর্ধবয়স্ক/কিশোর" },
+      label: { en: "Sub-Adults/Juveniles", bn: "Sub-Adults/Juveniles" },
       value: "subAdult",
     },
   ],
