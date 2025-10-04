@@ -21,11 +21,9 @@ interface Config {
     accountSid: string;
     authToken: string;
     serviceSid: string;
+    appHash?: string;
   };
   jwtSecret: string;
-  ssl: {
-    key: string;
-  };
 }
 
 const dbConfig = () => {
@@ -79,16 +77,7 @@ const twilioConfig = () => {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     serviceSid: process.env.TWILIO_SERVICE_SID,
-  };
-};
-
-const sslConfig = () => {
-  if (!process.env.SSL_KEY) {
-    throw new Error("Missing SSL configuration");
-  }
-
-  return {
-    key: process.env.SSL_KEY,
+    appHash: process.env.TWILIO_APP_HASH,
   };
 };
 
@@ -99,5 +88,4 @@ export const config: Config = {
   db: dbConfig(),
   redis: redisConfig(),
   twilio: twilioConfig(),
-  ssl: sslConfig(),
 };

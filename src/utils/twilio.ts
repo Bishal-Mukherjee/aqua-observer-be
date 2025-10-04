@@ -7,24 +7,25 @@ export const sendCode = async (phoneNumber: string) => {
   if (!phoneNumber) throw new Error("Phone number is required");
 
   const url = `${twilioServiceUrl}/Verifications`;
+  const params = new URLSearchParams({
+    To: phoneNumber,
+    Channel: "sms",
+  });
+
+  if (config.twilio?.appHash) {
+    params.append("AppHash", config.twilio.appHash);
+  }
 
   try {
-    const response = await axios.post(
-      url,
-      new URLSearchParams({
-        To: phoneNumber,
-        Channel: "sms",
-      }),
-      {
-        auth: {
-          username: config.twilio.accountSid,
-          password: config.twilio.authToken,
-        },
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+    const response = await axios.post(url, params, {
+      auth: {
+        username: config.twilio.accountSid,
+        password: config.twilio.authToken,
       },
-    );
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
 
     return response.data;
   } catch (err) {
