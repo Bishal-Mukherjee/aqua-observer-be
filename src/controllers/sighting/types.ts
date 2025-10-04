@@ -21,7 +21,6 @@ export interface Sighting {
   images: string[];
   notes: string;
   type: string;
-  isCached: boolean;
   submittedAt: string;
   submittedBy: {
     name: string;
@@ -62,5 +61,4 @@ export interface SightingReqBody {
   images?: string[];
   notes?: string;
   species: SpeciesData[];
-  isCached?: boolean;
 }

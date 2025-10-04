@@ -31,7 +31,6 @@ export interface Reporting {
   }>;
   images: string[];
   type: string;
-  isCached: boolean;
   submittedAt: string;
   submittedBy: {
     name: string;
@@ -72,5 +71,4 @@ export interface ReportingReqBody {
   block: string;
   images?: string[];
   species?: SpeciesData[];
-  isCached?: boolean;
 }
