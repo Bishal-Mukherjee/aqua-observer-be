@@ -23,9 +23,6 @@ interface Config {
     serviceSid: string;
   };
   jwtSecret: string;
-  ssl: {
-    key: string;
-  };
 }
 
 const dbConfig = () => {
@@ -82,16 +79,6 @@ const twilioConfig = () => {
   };
 };
 
-const sslConfig = () => {
-  if (!process.env.SSL_KEY) {
-    throw new Error("Missing SSL configuration");
-  }
-
-  return {
-    key: process.env.SSL_KEY,
-  };
-};
-
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -99,5 +86,4 @@ export const config: Config = {
   db: dbConfig(),
   redis: redisConfig(),
   twilio: twilioConfig(),
-  ssl: sslConfig(),
 };
