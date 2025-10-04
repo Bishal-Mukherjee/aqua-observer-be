@@ -46,5 +46,4 @@ export const postSightingSchema = Joi.object({
   fishingGears: Joi.array().items(Joi.string()).optional(),
   images: Joi.array().items(Joi.string()).optional(),
   notes: Joi.string().optional(),
-  isCached: Joi.boolean().optional(),
 });
