@@ -34,8 +34,6 @@ export const signinSchema = Joi.object({
     .message("Invalid code")
     .max(6)
     .message("Invalid code"),
-  isTest: Joi.boolean().optional(),
-  expiresIn: Joi.string().optional(),
 });
 
 export const resendCodeSchema = Joi.object({
@@ -47,7 +45,6 @@ export const resendCodeSchema = Joi.object({
       "string.empty": "Phone number is required",
       "any.required": "Phone number is required",
     }),
-  isTest: Joi.boolean().optional(),
 });
 
 export const refreshTokenSchema = Joi.object({

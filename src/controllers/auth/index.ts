@@ -111,8 +111,6 @@ export const signup = async (
   }
 };
 
-const WILDCARD_CODE = "000000";
-
 export const signin = async (
   req: Request<
     {},
@@ -120,8 +118,6 @@ export const signin = async (
     {
       phoneNumber: string;
       code: string;
-      isTest?: boolean;
-      expiresIn?: string;
       showOnboardingModules?: boolean;
     }
   >,
@@ -146,91 +142,7 @@ export const signin = async (
       return;
     }
 
-    const {
-      phoneNumber,
-      code,
-      isTest = false,
-      expiresIn, // TODO: Remove this
-    } = req.body;
-
-    // TODO: remove this condition
-    if (code === WILDCARD_CODE) {
-      const query = await pool.query(
-        "SELECT id, name, status FROM users WHERE phone_number = $1",
-        [phoneNumber],
-      );
-
-      if (query.rows.length === 0) {
-        res.status(401).json({ message: "User not found" });
-        return;
-      }
-
-      if (query.rows[0].status === "SUSPENDED") {
-        res.status(423).json({
-          message: "Your account has been suspended by the administrator",
-        });
-        return;
-      }
-
-      if (query.rows[0].name === null) {
-        res.status(200).json({
-          message: "User is already registered. Sign up is pending.",
-          result: { action: "proceed-with-signup" },
-        });
-        return;
-      }
-
-      // Calculate access token expiration (expiresIn + 2) minutes
-      const expiresInMinutes = !isNaN(Number(expiresIn))
-        ? Number(expiresIn) + 2
-        : 7 * 24 * 60 + 2;
-
-      const accessToken = jwt.sign(
-        {
-          id: query.rows[0].id,
-        },
-        config.jwtSecret,
-        {
-          expiresIn: `${expiresInMinutes}m`,
-        },
-      );
-
-      // Generate refresh token
-      const refreshToken = crypto.randomBytes(32).toString("hex");
-      const refreshTokenHash = await hash(refreshToken, 10);
-
-      // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
-      // TODO: Remove this
-      const refreshExpiresInMinutes = !isNaN(Number(expiresIn))
-        ? Number(expiresIn)
-        : 7 * 24 * 60;
-      const expiresAt = new Date(
-        Date.now() + refreshExpiresInMinutes * 60 * 1000,
-      );
-
-      // Save refresh token
-      await pool.query(
-        `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, created_at)
-         VALUES ($1, $2, $3, NOW())`,
-        [query.rows[0].id, refreshTokenHash, expiresAt],
-      );
-
-      // Clean up old refresh tokens for this user
-      await pool.query(
-        "DELETE FROM refresh_tokens WHERE user_id = $1 AND expires_at < NOW()",
-        [query.rows[0].id],
-      );
-
-      res.status(200).json({
-        message: "User signed in successfully",
-        result: {
-          accessToken,
-          refreshToken,
-          showOnboardingModules: query.rows[0].status === ONBOARDED,
-        },
-      });
-      return;
-    }
+    const { phoneNumber, code } = req.body;
 
     if (code) {
       // this flow serves the 2nd step of OTP validation
@@ -266,29 +178,27 @@ export const signin = async (
           return;
         }
 
-        // Calculate access token expiration (expiresIn + 2) minutes
-        const expiresInMinutes = !isNaN(Number(expiresIn))
-          ? Number(expiresIn) + 2
-          : 7 * 24 * 60 + 2;
-
         const accessToken = jwt.sign(
           {
             id: query.rows[0].id,
           },
           config.jwtSecret,
           {
-            expiresIn: `${expiresInMinutes}m`,
+            expiresIn: "1d",
           },
         );
+
+        const onboardingModulesCountQuery = await pool.query(
+          "SELECT COUNT(*) FROM modules WHERE tier = 'ONBOARDING' AND is_active = TRUE",
+        );
+
+        const hasOnboardingModules =
+          onboardingModulesCountQuery.rows[0].count > 0;
 
         const refreshToken = crypto.randomBytes(32).toString("hex");
         const refreshTokenHash = await hash(refreshToken, 10);
 
-        // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
-        // TODO: Remove this
-        const refreshExpiresInMinutes = !isNaN(Number(expiresIn))
-          ? Number(expiresIn)
-          : 7 * 24 * 60;
+        const refreshExpiresInMinutes = 7 * 24 * 60;
         const expiresAt = new Date(
           Date.now() + refreshExpiresInMinutes * 60 * 1000,
         );
@@ -303,7 +213,8 @@ export const signin = async (
           result: {
             accessToken,
             refreshToken,
-            showOnboardingModules: query.rows[0].status === ONBOARDED,
+            showOnboardingModules:
+              hasOnboardingModules && query.rows[0].status === ONBOARDED,
           },
         });
         return;
@@ -316,13 +227,11 @@ export const signin = async (
     );
 
     if (query.rows.length === 0) {
-      if (!isTest) {
-        const response = await sendCode(phoneNumber);
+      const response = await sendCode(phoneNumber);
 
-        if (response.status !== "approved" && response.status !== "pending") {
-          res.status(500).json({ message: "Failed to send OTP" });
-          return;
-        }
+      if (response.status !== "approved" && response.status !== "pending") {
+        res.status(500).json({ message: "Failed to send OTP" });
+        return;
       }
 
       // If user is not found, create a new user
@@ -350,21 +259,12 @@ export const signin = async (
       return;
     }
 
-    if (!isTest) {
-      const response = await sendCode(phoneNumber);
+    const response = await sendCode(phoneNumber);
 
-      if (response.status !== "approved" && response.status !== "pending") {
-        res.status(500).json({ message: "Failed to send OTP" });
-        return;
-      }
+    if (response.status !== "approved" && response.status !== "pending") {
+      res.status(500).json({ message: "Failed to send OTP" });
+      return;
     }
-
-    // const response = await sendCode(phoneNumber);
-
-    // if (response.status !== "approved" && response.status !== "pending") {
-    //   res.status(500).json({ message: "Failed to send OTP" });
-    //   return;
-    // }
 
     res.status(200).json({
       message: "OTP sent successfully",
@@ -377,7 +277,7 @@ export const signin = async (
 };
 
 export const resendCode = async (
-  req: Request<{}, {}, { phoneNumber: string; isTest?: boolean }>,
+  req: Request<{}, {}, { phoneNumber: string }>,
   res: Response<{
     message: string;
     error?: string;
@@ -394,12 +294,7 @@ export const resendCode = async (
       return;
     }
 
-    const { phoneNumber, isTest } = req.body;
-
-    if (isTest) {
-      res.status(200).json({ message: "OTP resend successfully" });
-      return;
-    }
+    const { phoneNumber } = req.body;
 
     const response = await sendCode(phoneNumber);
 

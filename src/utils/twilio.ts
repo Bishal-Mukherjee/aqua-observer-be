@@ -57,7 +57,7 @@ export const verifyCode = async (phoneNumber: string, code: string) => {
       },
     );
 
-    return response.data;
+    return response.data?.valid;
   } catch (err) {
     console.error(err);
     throw err;
