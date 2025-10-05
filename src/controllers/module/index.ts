@@ -101,6 +101,15 @@ export const getOnboardingModules = async (
     const totalRecords = parseInt(countRows[0].count, 10);
     const totalPages = Math.ceil(totalRecords / limit);
 
+    if (totalRecords === 0) {
+      res.status(200).json({
+        message: "Modules fetched successfully",
+        result: [],
+        pagination: { page: 1, totalPages: 0, totalRecords: 0 },
+      });
+      return;
+    }
+
     const { rows: modulesQuery } = await pool.query(
       `SELECT json_agg (json_build_object(
          'id', id,
