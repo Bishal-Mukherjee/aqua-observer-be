@@ -71,4 +71,5 @@ export interface ReportingReqBody {
   block: string;
   images?: string[];
   species?: SpeciesData[];
+  notes?: string;
 }
