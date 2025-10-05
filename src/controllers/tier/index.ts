@@ -22,13 +22,17 @@ export const getTiers = async (req: Request, res: Response) => {
        LEFT JOIN (
          SELECT tier, COUNT(*) AS modules
          FROM modules
+         WHERE is_active = true
          GROUP BY tier
        ) m ON t.tier = m.tier
        WHERE t.is_active = true;`,
     );
 
     if (tierQuery.rows.length === 0) {
-      res.status(404).json({ message: "Tiers not found" });
+      res.status(200).json({
+        message: "Tiers fetched successfully",
+        result: { tiers: [], finalTier: "TIER_1" },
+      });
       return;
     }
 

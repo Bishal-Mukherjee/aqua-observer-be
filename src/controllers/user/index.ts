@@ -40,6 +40,12 @@ export const getUserDetails = async (req: Request, res: Response) => {
     );
     const speciesLastUpdatedAt = speciesRows[0].lastupdatedat;
 
+    const { rows: tierRows } = await pool.query(
+      `SELECT MAX(last_updated_at) AS lastUpdatedAt FROM tiers`,
+    );
+
+    const tierLastUpdatedAt = tierRows[0].lastupdatedat;
+
     const { rows: modulesRows } = await pool.query(
       `SELECT MAX(last_updated_at) AS lastUpdatedAt FROM modules`,
     );
@@ -54,6 +60,7 @@ export const getUserDetails = async (req: Request, res: Response) => {
     const lastUpdatedAt = {
       questions: questionsLastUpdatedAt,
       species: speciesLastUpdatedAt,
+      tier: tierLastUpdatedAt,
       modules: modulesLastUpdatedAt,
       notifications: notificationsLastUpdatedAt,
     };
@@ -63,7 +70,8 @@ export const getUserDetails = async (req: Request, res: Response) => {
       result: query.rows[0],
       config: {
         lastUpdatedAt,
-        supportEmail: "support@sample.com, support2@sample.com, support3@sample.com", // TODO: Replace with actual support email
+        supportEmail:
+          "support@sample.com, support2@sample.com, support3@sample.com", // TODO: Replace with actual support email
       },
     });
   } catch (error) {
