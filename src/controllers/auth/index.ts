@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { pool } from "@/config/db";
 import { config } from "@/config/config";
-import { ONBOARDED } from "@/constants/constants";
+import { ONBOARDED, ADMIN } from "@/constants/constants";
 import {
   signinSchema,
   signupSchema,
@@ -147,6 +147,19 @@ export const signin = async (
     if (code) {
       // this flow serves the 2nd step of OTP validation
       // after the OTP has been sent, the user will receive it and provide it back
+
+      const query = await pool.query(
+        "SELECT id, role, status FROM users WHERE phone_number = $1",
+        [phoneNumber],
+      );
+
+      if (query.rows[0].role === ADMIN) {
+        res.status(403).json({
+          message: "Login not allowed for admin accounts",
+        });
+        return;
+      }
+
       const isValid = await verifyCode(phoneNumber, code);
 
       if (!isValid) {
@@ -222,7 +235,7 @@ export const signin = async (
     }
 
     const query = await pool.query(
-      "SELECT id, status FROM users WHERE phone_number = $1",
+      "SELECT id, role, status FROM users WHERE phone_number = $1",
       [phoneNumber],
     );
 
@@ -256,6 +269,11 @@ export const signin = async (
       res.status(423).json({
         message: "Your account has been suspended by the administrator",
       });
+      return;
+    }
+
+    if (query.rows[0].role === ADMIN) {
+      res.status(403).json({ message: "Login not allowed for admin accounts" });
       return;
     }
 
