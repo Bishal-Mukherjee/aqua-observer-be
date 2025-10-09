@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { pool } from "@/config/db";
 import { config } from "@/config/config";
+import { SIGHTER } from "@/constants/constants";
 
 interface User {
   id: string;
@@ -41,8 +42,8 @@ export const authenticate = async (
 
     // Verify the user exists in the database
     const result = await pool.query(
-      "SELECT id, phone_number, status FROM users WHERE id = $1",
-      [decoded.id],
+      "SELECT id, phone_number, status FROM users WHERE id = $1 AND role = $2",
+      [decoded.id, SIGHTER],
     );
 
     if (result.rows.length === 0) {
