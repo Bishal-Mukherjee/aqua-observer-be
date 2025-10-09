@@ -1,0 +1,70 @@
+name: RUDRA App Service - CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
+
+  Deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - name: Pull the Docker Image
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
+
+      - name: Delete Old Container
+        run: |
+          if [ "$(docker ps -aq -f name=rudra-app-service-container)" ]; then
+            docker stop rudra-app-service-container || true
+            docker rm rudra-app-service-container || true
+          fi
+
+      - name: Run the Container
+        run: |
+          docker run -d -p 8080:8080 \
+            --name rudra-app-service-container \
+            --restart unless-stopped \
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            -e DB_PORT=${{ secrets.DB_PORT }} \
+            -e DB_NAME=${{ secrets.DB_NAME }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            -e REDIS_USERNAME=${{ secrets.REDIS_USERNAME }} \
+            -e REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
+            -e REDIS_HOST=${{ secrets.REDIS_HOST }} \
+            -e REDIS_PORT=${{ secrets.REDIS_PORT }} \
+            -e TWILIO_SERVICE_SID=${{ secrets.TWILIO_SERVICE_SID }} \
+            -e TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }} \
+            -e TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }} \
+            -e TWILIO_APP_HASH=${{ secrets.TWILIO_APP_HASH }} \
+            -e SERVER_PORT=8080 \
+            ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
