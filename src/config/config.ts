@@ -28,6 +28,9 @@ interface Config {
     url: string;
     lookupBucket: string;
   };
+  mapMyIndia: {
+    accessKey: string;
+  };
 }
 
 const dbConfig = () => {
@@ -96,6 +99,14 @@ const supabaseConfig = () => {
   };
 };
 
+const mapMyIndiaConfig = () => {
+  if (!process.env.MAP_MY_INDIA_API_KEY) {
+    throw new Error("Missing MapMyIndia configuration");
+  }
+
+  return { accessKey: process.env.MAP_MY_INDIA_API_KEY };
+};
+
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -104,4 +115,5 @@ export const config: Config = {
   redis: redisConfig(),
   twilio: twilioConfig(),
   supabase: supabaseConfig(),
+  mapMyIndia: mapMyIndiaConfig(),
 };
