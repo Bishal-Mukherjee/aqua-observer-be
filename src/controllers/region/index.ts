@@ -4,7 +4,7 @@ import { redisClient } from "@/config/redis";
 import { DistrictBlocks } from "@/controllers/question/types";
 import { getStaticLookup } from "@/utils/static-lookup";
 import { config } from "@/config/config";
-import { mapMyIndiaBaseUrl } from "@/constants/constants";
+import { geoReverseApiUrl } from "@/constants/constants";
 
 export const getDistricts = async (
   req: Request,
@@ -84,15 +84,15 @@ export const getReverseGeocode = async (
       return;
     }
 
-    mapMyIndiaBaseUrl.searchParams.append(
+    geoReverseApiUrl.searchParams.append(
       "access_token",
-      config.mapMyIndia.accessKey,
+      config.geoReverse.accessKey,
     );
 
-    mapMyIndiaBaseUrl.searchParams.append("lat", roundedLat as string);
-    mapMyIndiaBaseUrl.searchParams.append("lng", roundedLng as string);
+    geoReverseApiUrl.searchParams.append("lat", roundedLat as string);
+    geoReverseApiUrl.searchParams.append("lng", roundedLng as string);
 
-    const response = await axios.get(mapMyIndiaBaseUrl.toString());
+    const response = await axios.get(geoReverseApiUrl.toString());
 
     if (response.data?.results?.length === 0) {
       res.status(200).json({

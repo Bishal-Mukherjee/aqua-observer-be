@@ -28,7 +28,7 @@ interface Config {
     url: string;
     lookupBucket: string;
   };
-  mapMyIndia: {
+  geoReverse: {
     accessKey: string;
   };
 }
@@ -99,12 +99,12 @@ const supabaseConfig = () => {
   };
 };
 
-const mapMyIndiaConfig = () => {
-  if (!process.env.MAP_MY_INDIA_API_KEY) {
-    throw new Error("Missing MapMyIndia configuration");
+const geoReverseConfig = () => {
+  if (!process.env.GEO_REVERSE_API_KEY) {
+    throw new Error("Missing GeoReverse configuration");
   }
 
-  return { accessKey: process.env.MAP_MY_INDIA_API_KEY };
+  return { accessKey: process.env.GEO_REVERSE_API_KEY };
 };
 
 export const config: Config = {
@@ -115,5 +115,5 @@ export const config: Config = {
   redis: redisConfig(),
   twilio: twilioConfig(),
   supabase: supabaseConfig(),
-  mapMyIndia: mapMyIndiaConfig(),
+  geoReverse: geoReverseConfig(),
 };
