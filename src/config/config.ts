@@ -24,7 +24,7 @@ interface Config {
     appHash?: string;
   };
   jwtSecret: string;
-  mapMyIndia: {
+  geoReverse: {
     accessKey: string;
   };
 }
@@ -84,12 +84,12 @@ const twilioConfig = () => {
   };
 };
 
-const mapMyIndiaConfig = () => {
-  if (!process.env.MAP_MY_INDIA_API_KEY) {
-    throw new Error("Missing MapMyIndia configuration");
+const geoReverseConfig = () => {
+  if (!process.env.GEO_REVERSE_API_KEY) {
+    throw new Error("Missing GeoReverse configuration");
   }
 
-  return { accessKey: process.env.MAP_MY_INDIA_API_KEY };
+  return { accessKey: process.env.GEO_REVERSE_API_KEY };
 };
 
 export const config: Config = {
@@ -99,5 +99,5 @@ export const config: Config = {
   db: dbConfig(),
   redis: redisConfig(),
   twilio: twilioConfig(),
-  mapMyIndia: mapMyIndiaConfig(),
+  geoReverse: geoReverseConfig(),
 };
