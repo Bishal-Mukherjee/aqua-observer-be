@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { pool } from "@/config/db";
 import { config } from "@/config/config";
-import { ONBOARDED, ADMIN } from "@/constants/constants";
+import { ONBOARDED, ADMIN, ACTIVE } from "@/constants/constants";
 import {
   signinSchema,
   signupSchema,
@@ -68,10 +68,18 @@ export const signup = async (
       return;
     }
 
-    await pool.query(
-      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, last_active_at = NOW() WHERE id = $6",
-      [name, email, gender, age, occupation, query.rows[0].id],
+    const onboardingModulesCountQuery = await pool.query(
+      "SELECT COUNT(*) FROM modules WHERE tier = 'ONBOARDING' AND is_active = TRUE",
     );
+
+    const hasOnboardingModules = onboardingModulesCountQuery.rows[0].count > 0;
+
+    const status = hasOnboardingModules ? ONBOARDED : ACTIVE;
+
+    await pool.query(
+      "UPDATE users SET name = $1, email = $2, gender = $3, age = $4, occupation = $5, status = $6, last_active_at = NOW() WHERE id = $7",
+      [name, email, gender, age, occupation, status, query.rows[0].id],
+    ); // TODO: remove the 'status' update after testing
 
     const accessToken = jwt.sign(
       {
@@ -85,12 +93,6 @@ export const signup = async (
 
     const refreshToken = crypto.randomBytes(32).toString("hex");
     const refreshTokenHash = await hash(refreshToken, 10);
-
-    const onboardingModulesCountQuery = await pool.query(
-      "SELECT COUNT(*) FROM modules WHERE tier = 'ONBOARDING' AND is_active = TRUE",
-    );
-
-    const hasOnboardingModules = onboardingModulesCountQuery.rows[0].count > 0;
 
     // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
     const expiresInMinutes = !isNaN(Number(expiresIn))
