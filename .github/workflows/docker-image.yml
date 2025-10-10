@@ -66,5 +66,7 @@ jobs:
             -e TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }} \
             -e TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }} \
             -e TWILIO_APP_HASH=${{ secrets.TWILIO_APP_HASH }} \
+            -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            -e SUPABASE_LOOKUP_BUCKET=${{ secrets.SUPABASE_LOOKUP_BUCKET }} \
             -e SERVER_PORT=8080 \
             ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest

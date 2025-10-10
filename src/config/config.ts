@@ -24,6 +24,10 @@ interface Config {
     appHash?: string;
   };
   jwtSecret: string;
+  supabase: {
+    url: string;
+    lookupBucket: string;
+  };
 }
 
 const dbConfig = () => {
@@ -81,6 +85,17 @@ const twilioConfig = () => {
   };
 };
 
+const supabaseConfig = () => {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_LOOKUP_BUCKET) {
+    throw new Error("Missing supabase configuration");
+  }
+
+  return {
+    url: process.env.SUPABASE_URL,
+    lookupBucket: process.env.SUPABASE_LOOKUP_BUCKET,
+  };
+};
+
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -88,4 +103,5 @@ export const config: Config = {
   db: dbConfig(),
   redis: redisConfig(),
   twilio: twilioConfig(),
+  supabase: supabaseConfig(),
 };
