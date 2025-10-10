@@ -32,3 +32,7 @@ export const LIVE_REPORTING = "LIVE_REPORTING",
   ACTIVE = "ACTIVE",
   ADMIN = "ADMIN",
   SIGHTER = "SIGHTER";
+
+export const mapMyIndiaBaseUrl = new URL(
+  "https://search.mappls.com/search/address/rev-geocode",
+);
