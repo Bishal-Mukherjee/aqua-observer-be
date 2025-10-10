@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { pool } from "@/config/db";
-import { redisClient } from "@/config/redis";
 import { Species, SpeciesCause } from "@/controllers/species/types";
+import { getStaticLookup } from "@/utils/static-lookup";
 
 export const getSpecies = async (req: Request, res: Response) => {
   try {
-    const speciesCauses = (await redisClient.json.get(
+    const speciesCauses = (await getStaticLookup(
       "species_causes",
     )) as unknown as SpeciesCause[];
 

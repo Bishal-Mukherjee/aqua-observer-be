@@ -7,8 +7,8 @@ import {
   MatchResult,
 } from "@/controllers/sighting/types";
 import { postSightingSchema } from "@/controllers/sighting/validations";
-import { redisClient } from "@/config/redis";
 import { findBestMatch } from "@/utils/strings";
+import { getStaticLookup } from "@/utils/static-lookup";
 
 export const postSighting = async (req: Request, res: Response) => {
   const { error } = postSightingSchema.validate(req.body);
@@ -35,8 +35,8 @@ export const postSighting = async (req: Request, res: Response) => {
 
     if (type === LIVE_SIGHTING && m !== UNKNOWN && b !== UNKNOWN) {
       const [districtsData, blocksData] = (await Promise.all([
-        redisClient.json.get("districts"),
-        redisClient.json.get("blocks"),
+        getStaticLookup("districts"),
+        getStaticLookup("blocks"),
       ])) as [any[], Record<string, any[]>];
 
       const matchedDistrict = await Promise.resolve(

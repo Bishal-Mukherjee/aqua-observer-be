@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import { redisClient } from "@/config/redis";
 import { DistrictBlocks } from "@/controllers/question/types";
+import { getStaticLookup } from "@/utils/static-lookup";
 
 export const getDistricts = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const districts = await redisClient.json.get("districts");
+    const districts = await getStaticLookup("districts");
     if (districts) {
       res.status(200).json({
         message: "Districts fetched successfully",
@@ -25,9 +25,7 @@ export const getDistricts = async (
 
 export const getBlocks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const blocks = (await redisClient.json.get(
-      "blocks",
-    )) as DistrictBlocks | null;
+    const blocks = (await getStaticLookup("blocks")) as DistrictBlocks | null;
 
     const { district } = req.query;
 

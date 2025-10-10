@@ -9,6 +9,7 @@ import {
   FormattedQuestion,
 } from "@/controllers/question/types";
 import { speciesAgeGroups } from "@/constants/constants";
+import { getStaticLookup } from "@/utils/static-lookup";
 
 export const getAllQuestions = async (
   req: Request,
@@ -40,7 +41,6 @@ export const getAllQuestions = async (
     }
 
     const [
-      //   districtData,
       threatsData,
       fishingGearsData,
       waterBodiesData,
@@ -48,16 +48,11 @@ export const getAllQuestions = async (
       weatherConditionData,
       questionsQuery,
     ] = await Promise.all([
-      //   redisClient.json.get("districts") as Promise<LabelOption[] | null>,
-      redisClient.json.get("threats") as Promise<LabelOption[] | null>,
-      redisClient.json.get("fishing_gears") as Promise<LabelOption[] | null>,
-      redisClient.json.get("water_bodies") as Promise<LabelOption[] | null>,
-      redisClient.json.get("water_body_conditions") as Promise<
-        LabelOption[] | null
-      >,
-      redisClient.json.get("weather_conditions") as Promise<
-        LabelOption[] | null
-      >,
+      getStaticLookup("disturbances"),
+      getStaticLookup("fishing_gears"),
+      getStaticLookup("water_bodies"),
+      getStaticLookup("water_body_conditions"),
+      getStaticLookup("weather_conditions"),
       pool.query(
         "SELECT index, topic, label_en, label_bn, option_key, type, is_optional FROM questions WHERE contexts @> $1::text[]",
         [[typeInUpperCase]],
@@ -65,7 +60,6 @@ export const getAllQuestions = async (
     ]);
 
     const dataObj: DataObject = {
-      //   districts: districtData,
       threats: threatsData,
       fishing_gears: fishingGearsData,
       water_bodies: waterBodiesData,
