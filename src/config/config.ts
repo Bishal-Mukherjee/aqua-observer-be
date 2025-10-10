@@ -24,6 +24,9 @@ interface Config {
     appHash?: string;
   };
   jwtSecret: string;
+  mapMyIndia: {
+    accessKey: string;
+  };
 }
 
 const dbConfig = () => {
@@ -81,6 +84,14 @@ const twilioConfig = () => {
   };
 };
 
+const mapMyIndiaConfig = () => {
+  if (!process.env.MAP_MY_INDIA_API_KEY) {
+    throw new Error("Missing MapMyIndia configuration");
+  }
+
+  return { accessKey: process.env.MAP_MY_INDIA_API_KEY };
+};
+
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -88,4 +99,5 @@ export const config: Config = {
   db: dbConfig(),
   redis: redisConfig(),
   twilio: twilioConfig(),
+  mapMyIndia: mapMyIndiaConfig(),
 };
