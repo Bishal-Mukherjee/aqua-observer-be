@@ -86,6 +86,12 @@ export const signup = async (
     const refreshToken = crypto.randomBytes(32).toString("hex");
     const refreshTokenHash = await hash(refreshToken, 10);
 
+    const onboardingModulesCountQuery = await pool.query(
+      "SELECT COUNT(*) FROM modules WHERE tier = 'ONBOARDING' AND is_active = TRUE",
+    );
+
+    const hasOnboardingModules = onboardingModulesCountQuery.rows[0].count > 0;
+
     // Calculate expiration time - if expiresIn is a number, use minutes, otherwise default to 7 days
     const expiresInMinutes = !isNaN(Number(expiresIn))
       ? Number(expiresIn)
@@ -102,7 +108,8 @@ export const signup = async (
       result: {
         accessToken,
         refreshToken,
-        showOnboardingModules: query.rows[0].status === ONBOARDED,
+        showOnboardingModules:
+          hasOnboardingModules && query.rows[0].status === ONBOARDED,
       },
     });
   } catch (err) {
