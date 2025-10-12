@@ -30,7 +30,7 @@ export const authenticate = async (
     return;
   }
 
-  const token = (authHeader?.split(" ")[1] || "") as string;
+  const token = authHeader?.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;
