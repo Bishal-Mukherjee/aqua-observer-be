@@ -1,9 +1,9 @@
 import express from "express";
-import { authenticate } from "@/middlewares/authenticate";
-import { getResource } from "@/controllers/resource";
+import { uploadResource } from "@/controllers/resource";
+import { uploadMiddleware } from "@/utils/file-upload";
 
 const router = express.Router();
 
-router.get("/:resource/:file", authenticate, getResource);
+router.post("/", uploadMiddleware, uploadResource);
 
 export default router;

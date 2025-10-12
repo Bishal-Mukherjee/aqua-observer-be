@@ -1,7 +1,6 @@
 import express from "express";
 import { authenticate } from "@/middlewares/authenticate";
 import authRoutes from "@/routes/auth";
-import healthRoutes from "@/routes/health";
 import userRoutes from "@/routes/user";
 import speciesRoutes from "@/routes/species";
 import regionRoutes from "@/routes/region";
@@ -17,7 +16,6 @@ import resourceRoutes from "@/routes/resource";
 const router = express.Router();
 
 router.use("/auth", authRoutes);
-router.use("/health", authenticate, healthRoutes);
 router.use("/user", authenticate, userRoutes);
 router.use("/species", authenticate, speciesRoutes);
 router.use("/region", authenticate, regionRoutes);
@@ -28,6 +26,6 @@ router.use("/question", authenticate, questionRoutes);
 router.use("/tier", authenticate, tierRoutes);
 router.use("/module", authenticate, moduleRoutes);
 router.use("/notifications", authenticate, notificationRoutes);
-router.use("/resource", resourceRoutes);
+router.use("/resource", authenticate, resourceRoutes);
 
 export { router };

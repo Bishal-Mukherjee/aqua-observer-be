@@ -27,6 +27,7 @@ interface Config {
   supabase: {
     url: string;
     lookupBucket: string;
+    secretKey: string;
   };
   geoReverse: {
     accessKey: string;
@@ -91,13 +92,18 @@ const twilioConfig = () => {
 };
 
 const supabaseConfig = () => {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_LOOKUP_BUCKET) {
+  if (
+    !process.env.SUPABASE_URL ||
+    !process.env.SUPABASE_LOOKUP_BUCKET ||
+    !process.env.SUPABASE_SECRET_KEY
+  ) {
     throw new Error("Missing supabase configuration");
   }
 
   return {
     url: process.env.SUPABASE_URL,
     lookupBucket: process.env.SUPABASE_LOOKUP_BUCKET,
+    secretKey: process.env.SUPABASE_SECRET_KEY,
   };
 };
 

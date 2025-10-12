@@ -1,43 +1,30 @@
-import axios from "axios";
 import { Request, Response } from "express";
-import { StorageClient } from "@supabase/storage-js";
-import { config } from "@/config/config";
+import { uploadFileToStorage } from "@/utils/file-upload";
 
-const STORAGE_URL = config.storageUrl;
-const SERVICE_KEY = config.serviceRole;
-
-const storageClient = new StorageClient(STORAGE_URL, {
-  apikey: SERVICE_KEY,
-  Authorization: `Bearer ${SERVICE_KEY}`,
-});
-
-export const getResource = async (req: Request, res: Response) => {
+export const uploadResource = async (req: Request, res: Response) => {
   try {
-    const { resource, file } = req.params;
+    const file = req.file;
 
-    const filePath = `${resource}/${file}`;
-
-    const { data, error } = await storageClient
-      .from("secure-bucket")
-      .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 1 week
-
-    if (error) {
-      console.log(error);
-      res.status(500).json({ message: "Internal server error" });
+    if (!file) {
+      res.status(400).json({ message: "No file provided" });
       return;
     }
 
-    try {
-      const imageRes = await axios.get(data.signedUrl, {
-        responseType: "stream",
-      });
+    const uploadResult = await uploadFileToStorage(file, {
+      bucket: "secured-bucket",
+      folder: "uploads",
+    });
 
-      res.setHeader("Content-Type", imageRes.headers["content-type"]);
-      imageRes.data.pipe(res);
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ message: "Internal server error" });
+    if (!uploadResult.success) {
+      const statusCode = uploadResult.error?.includes("too large") ? 413 : 500;
+      res.status(statusCode).json({ message: uploadResult.error });
+      return;
     }
+
+    res.status(200).json({
+      message: "File uploaded successfully",
+      result: { filePath: uploadResult.filePath },
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Internal server error" });
