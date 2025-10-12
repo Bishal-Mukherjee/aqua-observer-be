@@ -94,11 +94,8 @@ export const getReverseGeocode = async (
 
     const response = await axios.get(geoReverseApiUrl.toString());
 
-    if (response.data?.results?.length === 0) {
-      res.status(200).json({
-        message: "No address found for the given coordinates",
-        result: null,
-      });
+    if (!response?.data?.results) {
+      res.status(500).json({ error: "Internal Server Error" });
       return;
     }
 
