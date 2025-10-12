@@ -28,6 +28,9 @@ interface Config {
     url: string;
     lookupBucket: string;
   };
+  geoReverse: {
+    accessKey: string;
+  };
 }
 
 const dbConfig = () => {
@@ -96,6 +99,14 @@ const supabaseConfig = () => {
   };
 };
 
+const geoReverseConfig = () => {
+  if (!process.env.GEO_REVERSE_API_KEY) {
+    throw new Error("Missing GeoReverse configuration");
+  }
+
+  return { accessKey: process.env.GEO_REVERSE_API_KEY };
+};
+
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -104,4 +115,5 @@ export const config: Config = {
   redis: redisConfig(),
   twilio: twilioConfig(),
   supabase: supabaseConfig(),
+  geoReverse: geoReverseConfig(),
 };
