@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
   build:
@@ -12,6 +13,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set environment variables
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "IMAGE_TAG=dev" >> $GITHUB_ENV
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -31,11 +40,12 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:${{ env.IMAGE_TAG }}
 
-  Deploy:
-    runs-on: self-hosted
+  deploy-production:
+    runs-on: [self-hosted, production]
     needs: build
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Pull the Docker Image
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
@@ -70,3 +80,42 @@ jobs:
             -e SUPABASE_LOOKUP_BUCKET=${{ secrets.SUPABASE_LOOKUP_BUCKET }} \
             -e SERVER_PORT=8080 \
             ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
+
+  deploy-development:
+    runs-on: [self-hosted, development]
+    needs: build
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - name: Pull the Docker Image
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:dev
+
+      - name: Delete Old Container
+        run: |
+          if [ "$(docker ps -aq -f name=rudra-app-service-container)" ]; then
+            docker stop rudra-app-service-container || true
+            docker rm rudra-app-service-container || true
+          fi
+
+      - name: Run the Container
+        run: |
+          docker run -d -p 8080:8080 \
+            --name rudra-app-service-container \
+            --restart unless-stopped \
+            -e DB_HOST=${{ secrets.DEV_DB_HOST }} \
+            -e DB_PORT=${{ secrets.DEV_DB_PORT }} \
+            -e DB_NAME=${{ secrets.DEV_DB_NAME }} \
+            -e DB_USER=${{ secrets.DEV_DB_USER }} \
+            -e DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }} \
+            -e JWT_SECRET=${{ secrets.DEV_JWT_SECRET }} \
+            -e REDIS_USERNAME=${{ secrets.DEV_REDIS_USERNAME }} \
+            -e REDIS_PASSWORD=${{ secrets.DEV_REDIS_PASSWORD }} \
+            -e REDIS_HOST=${{ secrets.DEV_REDIS_HOST }} \
+            -e REDIS_PORT=${{ secrets.DEV_REDIS_PORT }} \
+            -e TWILIO_SERVICE_SID=${{ secrets.TWILIO_SERVICE_SID }} \
+            -e TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }} \
+            -e TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }} \
+            -e TWILIO_APP_HASH=${{ secrets.TWILIO_APP_HASH }} \
+            -e SUPABASE_URL=${{ secrets.DEV_SUPABASE_URL }} \
+            -e SUPABASE_LOOKUP_BUCKET=${{ secrets.DEV_SUPABASE_LOOKUP_BUCKET }} \
+            -e SERVER_PORT=8080 \
+            ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:dev
