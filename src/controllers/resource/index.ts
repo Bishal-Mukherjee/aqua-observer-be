@@ -11,7 +11,7 @@ export const uploadResource = async (req: Request, res: Response) => {
     }
 
     const uploadResult = await uploadFileToStorage(file, {
-      bucket: "secured-bucket",
+      bucket: "submissions",
       folder: "uploads",
     });
 

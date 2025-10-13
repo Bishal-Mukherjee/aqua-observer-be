@@ -32,8 +32,6 @@ interface Config {
   geoReverse: {
     accessKey: string;
   };
-  serviceRole: string;
-  storageUrl: string;
 }
 
 const dbConfig = () => {
@@ -124,6 +122,4 @@ export const config: Config = {
   twilio: twilioConfig(),
   supabase: supabaseConfig(),
   geoReverse: geoReverseConfig(),
-  storageUrl: process.env.STORAGE_URL || "",
-  serviceRole: process.env.SERVICE_ROLE || "",
 };
