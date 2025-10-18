@@ -1,6 +1,7 @@
 import path from "path";
-import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
+import multer from "multer";
+import { nanoid } from "nanoid";
 import { config } from "@/config/config";
 
 const supabase = createClient(config.supabase.url, config.supabase.secretKey);
@@ -35,8 +36,8 @@ export const uploadFileToStorage = async (
     }
 
     const extension = path.extname(file.originalname);
-    const timestamp = Date.now();
-    const fileName = `${timestamp}${extension}`;
+    const fileId = nanoid();
+    const fileName = `${fileId}${extension}`;
     const filePath = `${folder}/${fileName}`;
 
     const { data, error } = await supabase.storage
