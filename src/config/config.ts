@@ -27,9 +27,11 @@ interface Config {
   supabase: {
     url: string;
     lookupBucket: string;
+    secretKey: string;
   };
-  geoReverse: {
-    accessKey: string;
+  geocoding: {
+    geocodeKey: string;
+    reverseGeocodeKey: string;
   };
 }
 
@@ -89,22 +91,30 @@ const twilioConfig = () => {
 };
 
 const supabaseConfig = () => {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_LOOKUP_BUCKET) {
+  if (
+    !process.env.SUPABASE_URL ||
+    !process.env.SUPABASE_LOOKUP_BUCKET ||
+    !process.env.SUPABASE_SECRET_KEY
+  ) {
     throw new Error("Missing supabase configuration");
   }
 
   return {
     url: process.env.SUPABASE_URL,
     lookupBucket: process.env.SUPABASE_LOOKUP_BUCKET,
+    secretKey: process.env.SUPABASE_SECRET_KEY,
   };
 };
 
-const geoReverseConfig = () => {
-  if (!process.env.GEO_REVERSE_API_KEY) {
-    throw new Error("Missing GeoReverse configuration");
+const geocodingConfig = () => {
+  if (!process.env.GEOCODE_API_KEY || !process.env.REVERSE_GEOCODE_API_KEY) {
+    throw new Error("Missing geocoding configuration");
   }
 
-  return { accessKey: process.env.GEO_REVERSE_API_KEY };
+  return {
+    geocodeKey: process.env.GEOCODE_API_KEY,
+    reverseGeocodeKey: process.env.REVERSE_GEOCODE_API_KEY,
+  };
 };
 
 export const config: Config = {
@@ -115,5 +125,5 @@ export const config: Config = {
   redis: redisConfig(),
   twilio: twilioConfig(),
   supabase: supabaseConfig(),
-  geoReverse: geoReverseConfig(),
+  geocoding: geocodingConfig(),
 };

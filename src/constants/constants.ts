@@ -1,3 +1,5 @@
+import { config } from "@/config/config";
+
 export const speciesAgeGroups = {
   duo: [
     {
@@ -33,6 +35,6 @@ export const LIVE_REPORTING = "LIVE_REPORTING",
   ADMIN = "ADMIN",
   SIGHTER = "SIGHTER";
 
-export const geoReverseApiUrl = new URL(
-  "https://search.mappls.com/search/address/rev-geocode",
-);
+export const geocodingApiUrl = `https://maps.googleapis.com/maps/api/geocode/json?key=${config.geocoding.geocodeKey}`;
+
+export const reverseGeocodingApiUrl = `https://apis.mappls.com/advancedmaps/v1/${config.geocoding.reverseGeocodeKey}/rev_geocode`;
