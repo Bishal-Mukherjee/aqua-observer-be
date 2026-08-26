@@ -1,6 +1,5 @@
 import express from "express";
 import { authenticate } from "@/middlewares/authenticate";
-// import { authenticateAdmin } from "@/middlewares/authenticate-admin";
 import { authenticateOptional } from "@/middlewares/authenticate-optional";
 import authRoutes from "@/routes/auth";
 import userRoutes from "@/routes/user";
@@ -16,13 +15,14 @@ import notificationRoutes from "@/routes/notifications";
 import resourceRoutes from "@/routes/resource";
 import reportsRoutes from "@/routes/reports";
 import uploadLogRoutes from "@/routes/upload-log";
+import publicSightingRoutes from "@/routes/public-sighting";
 
 const router = express.Router();
 
 router.use("/auth", authRoutes);
 router.use("/user", authenticate, userRoutes);
-router.use("/species", authenticate, speciesRoutes);
-router.use("/region", authenticate, regionRoutes);
+router.use("/species", speciesRoutes);
+router.use("/region", regionRoutes);
 router.use("/submission", authenticate, submissionRoutes);
 router.use("/reporting", authenticate, reportingRoutes);
 router.use("/sighting", authenticate, sightingRoutes);
@@ -30,8 +30,9 @@ router.use("/question", authenticate, questionRoutes);
 router.use("/tier", authenticate, tierRoutes);
 router.use("/module", authenticate, moduleRoutes);
 router.use("/notifications", authenticate, notificationRoutes);
-router.use("/resource", authenticate, resourceRoutes);
+router.use("/resource", resourceRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/log", authenticateOptional, uploadLogRoutes);
+router.use("/form", publicSightingRoutes);
 
 export { router };

@@ -5,6 +5,7 @@ import {
   getGeocode,
   getReverseGeocode,
 } from "@/controllers/region";
+import { authenticate } from "@/middlewares/authenticate";
 
 const router = express.Router();
 
@@ -175,7 +176,7 @@ router.get("/blocks", getBlocks);
  *                   type: string
  *                   example: Submission from Maharashtra is not allowed
  */
-router.get("/geocode", getGeocode);
+router.get("/geocode", authenticate, getGeocode);
 
 /**
  * @swagger
@@ -256,6 +257,6 @@ router.get("/geocode", getGeocode);
  *                   type: string
  *                   example: Submission from Maharashtra is not allowed
  */
-router.get("/reverse-geocode", getReverseGeocode);
+router.get("/reverse-geocode", authenticate, getReverseGeocode);
 
 export default router;
