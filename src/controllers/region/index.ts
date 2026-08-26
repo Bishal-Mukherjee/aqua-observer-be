@@ -62,6 +62,48 @@ export const getBlocks = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export interface GeocodeResult {
+  lat: number | null;
+  lng: number | null;
+  state: string | null;
+}
+
+export const geocodeAddress = async (
+  address: string,
+): Promise<GeocodeResult> => {
+  const apiUrl = new URL(geocodingApiUrl);
+
+  apiUrl.searchParams.append("address", address);
+
+  const response = await axios.get(apiUrl.toString());
+
+  if (!response?.data?.results) {
+    throw new Error("Internal Server Error");
+  }
+
+  const state = response.data.results[0]?.address_components?.find(
+    (component: { types: string[] }) =>
+      component.types.includes("administrative_area_level_1"),
+  )?.long_name;
+
+  if (state && !ALLOWED_STATES.includes(normalizeStateName(state))) {
+    throw new Error(`Submission from ${state} is not allowed`);
+  }
+
+  const lat = Number(
+    response.data.results[0]?.geometry?.location?.lat,
+  ).toFixed(7);
+  const lng = Number(
+    response.data.results[0]?.geometry?.location?.lng,
+  ).toFixed(7);
+
+  return {
+    lat: lat ? Number(lat) : null,
+    lng: lng ? Number(lng) : null,
+    state: state || null,
+  };
+};
+
 export const getGeocode = async (
   req: Request,
   res: Response,
@@ -74,47 +116,17 @@ export const getGeocode = async (
       return;
     }
 
-    const apiUrl = new URL(geocodingApiUrl);
-
-    apiUrl.searchParams.append("address", address as string);
-
-    const response = await axios.get(apiUrl.toString());
-
-    if (!response?.data?.results) {
-      res.status(500).json({ error: "Internal Server Error" });
-      return;
-    }
-
-    const state = response.data.results[0]?.address_components?.find(
-      (component: { types: string[] }) =>
-        component.types.includes("administrative_area_level_1"),
-    )?.long_name;
-
-    if (state && !ALLOWED_STATES.includes(normalizeStateName(state))) {
-      res
-        .status(500)
-        .json({ error: `Submission from ${state} is not allowed` });
-      return;
-    }
-
-    const lat = Number(
-      response.data.results[0]?.geometry?.location?.lat,
-    ).toFixed(7);
-    const lng = Number(
-      response.data.results[0]?.geometry?.location?.lng,
-    ).toFixed(7);
+    const result = await geocodeAddress(address as string);
 
     res.status(200).json({
       message: "Location fetched successfully",
-      result: {
-        lat: lat || null,
-        lng: lng || null,
-        state: state || null,
-      },
+      result,
     });
   } catch (error) {
-    console.error("Error fetching reverse geocode:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error fetching geocode:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Internal Server Error",
+    });
   }
 };
 
