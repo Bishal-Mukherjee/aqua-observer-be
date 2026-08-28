@@ -50,8 +50,8 @@ export const postPublicSightingSchema = Joi.object({
     "string.base": "Village or ghat must be a string",
     "any.required": "Village or ghat is a required field",
   }),
-  landmark: Joi.string().optional(),
-  fishingGears: Joi.array().items(Joi.string()).optional(),
-  images: Joi.array().items(Joi.string()).optional(),
-  notes: Joi.string().optional(),
+  landmark: Joi.string().allow(null, "").optional(),
+  fishingGears: Joi.array().items(Joi.string().allow(null, "")).optional(),
+  images: Joi.array().items(Joi.string().allow(null, "")).optional(),
+  notes: Joi.string().allow(null, "").optional(),
 });
