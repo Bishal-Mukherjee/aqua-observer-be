@@ -90,12 +90,12 @@ export const geocodeAddress = async (
     throw new Error(`Submission from ${state} is not allowed`);
   }
 
-  const lat = Number(
-    response.data.results[0]?.geometry?.location?.lat,
-  ).toFixed(7);
-  const lng = Number(
-    response.data.results[0]?.geometry?.location?.lng,
-  ).toFixed(7);
+  const lat = Number(response.data.results[0]?.geometry?.location?.lat).toFixed(
+    7,
+  );
+  const lng = Number(response.data.results[0]?.geometry?.location?.lng).toFixed(
+    7,
+  );
 
   return {
     lat: lat ? Number(lat) : null,
@@ -164,7 +164,10 @@ export const getReverseGeocode = async (
         return;
       }
 
-      const result = buildReverseGeocodeResult(parsedCachedData, districtsData);
+      const result = await buildReverseGeocodeResult(
+        parsedCachedData,
+        districtsData,
+      );
       res
         .status(200)
         .json({ message: "Location fetched successfully", result });
@@ -189,7 +192,7 @@ export const getReverseGeocode = async (
       EX: CACHE_TTL.reverseGeocode,
     });
 
-    const result = buildReverseGeocodeResult(geocodeData, districtsData);
+    const result = await buildReverseGeocodeResult(geocodeData, districtsData);
 
     if (
       result?.state &&

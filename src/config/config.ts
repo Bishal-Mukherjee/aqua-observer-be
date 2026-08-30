@@ -44,6 +44,11 @@ interface Config {
     reverseGeocodeKey: string;
   };
   reportApiUrl: string;
+  ollama: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  };
 }
 
 const dbConfig = () => {
@@ -143,6 +148,18 @@ const reportApiUrl = () => {
   return process.env.REPORT_API_URL;
 };
 
+const getOllamaConfig = () => {
+  if (!process.env.OLLAMA_API_KEY || !process.env.OLLAMA_MODEL) {
+    throw new Error("Missing OLLAMA configuration in environment variables");
+  }
+
+  return {
+    baseUrl: "https://ollama.com",
+    apiKey: process.env.OLLAMA_API_KEY,
+    model: process.env.OLLAMA_MODEL,
+  };
+};
+
 export const config: Config = {
   port: Number(process.env.SERVER_PORT) || 8080,
   jwtSecret: process.env.JWT_SECRET || "secret",
@@ -152,4 +169,5 @@ export const config: Config = {
   s3: s3Config(),
   geocoding: geocodingConfig(),
   reportApiUrl: reportApiUrl(),
+  ollama: getOllamaConfig(),
 };

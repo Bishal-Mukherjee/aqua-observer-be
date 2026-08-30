@@ -1,17 +1,17 @@
 import { UNKNOWN } from "@/constants/constants";
-import { findBestMatch } from "@/utils/strings";
+import { resolveDistrictFromAddress } from "@/utils/strings";
 
-export const buildReverseGeocodeResult = (
+export const buildReverseGeocodeResult = async (
   geocodeData: {
     district?: string;
     subDistrict?: string;
     formatted_address?: string;
-	state?: string;
+    state?: string;
   } | null,
   districtsData: any[],
 ) => {
-  const matchedDistrict = findBestMatch(
-    geocodeData?.district as string,
+  const matchedDistrict = await resolveDistrictFromAddress(
+    geocodeData?.formatted_address || geocodeData?.district || "",
     districtsData,
   );
 
