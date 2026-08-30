@@ -89,6 +89,8 @@ jobs:
             -e GEOCODE_API_KEY=${{ secrets.GEOCODE_API_KEY }} \
             -e REVERSE_GEOCODE_API_KEY=${{ secrets.REVERSE_GEOCODE_API_KEY }} \
             -e REPORT_API_URL=${{ secrets.REPORT_API_URL }} \
+            -e OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }} \
+            -e OLLAMA_MODEL=${{ secrets.OLLAMA_MODEL }} \
             -e SERVER_PORT=8080 \
             ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:latest
 
@@ -144,6 +146,8 @@ jobs:
             -e GEOCODE_API_KEY=${{ secrets.GEOCODE_API_KEY }} \
             -e REVERSE_GEOCODE_API_KEY=${{ secrets.REVERSE_GEOCODE_API_KEY }} \
             -e REPORT_API_URL=${{ secrets.REPORT_API_URL }} \
+            -e OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }} \
+            -e OLLAMA_MODEL=${{ secrets.OLLAMA_MODEL }} \
             -e SERVER_PORT=8080 \
             ${{ secrets.DOCKER_USERNAME }}/rudra-app-service:dev
 
